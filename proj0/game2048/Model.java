@@ -114,11 +114,57 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
+        board.setViewingPerspective(side);
+
+        // looping through columns
+        for (int i = 0; i < board.size(); i += 1) {
+            System.out.println("trigger func: tiltOneColumn");
+            changed = tiltOneColumn(i, changed);
+        }
+
+        board.setViewingPerspective(Side.NORTH);
+
         checkGameOver();
         if (changed) {
             setChanged();
         }
         return changed;
+    }
+
+    public boolean tiltOneColumn(int c, boolean changed) {
+        // loop over each tile starting from the second top row
+        boolean merged = false;
+        for (int r = board.size() - 2; r >= 0 ; r -= 1) {
+            Tile cur_tile = board.tile(c, r);
+            if (cur_tile != null) {
+                int target_row = identifyMoveDestination(c, r, cur_tile, merged);
+                // no move action if target_row == r
+                if (target_row != r) {
+                    merged = board.move(c, target_row, cur_tile);
+                    if (merged) {
+                        score += cur_tile.value() * 2;
+                    }
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
+    public int identifyMoveDestination(int c, int r, Tile ct, boolean merged) {
+        // check tiles above current tile and compare with current tile if necessary
+        for (int j = r + 1; j <= board.size() - 1; j += 1) {
+            Tile tmp_tile = board.tile(c, j);
+            if (tmp_tile != null) {
+                if (!merged && tmp_tile.value() == ct.value()) {
+                    return j;
+                }
+                else {
+                    return j - 1;
+                }
+            }
+        }
+        return board.size() - 1;
     }
 
     /** Checks if the game is over and sets the gameOver variable
@@ -176,12 +222,8 @@ public class Model extends Observable {
         // TODO: Fill in this function.
         // 1) at least 1 non-null tile - emptySpaceExists -> true
         // 2) at least 2 tiles adjacent to each other
-        if (emptySpaceExists(b) || checkEqualNeighbor(b)) {
-            return true;
-        }
-        return false;
+        return emptySpaceExists(b) || checkEqualNeighbor(b);
     }
-
 
     /** Check if any 2 adjacent tiles have the same value on the board*/
     public static boolean checkEqualNeighbor(Board b) {
@@ -203,7 +245,6 @@ public class Model extends Observable {
         }
         return false;
     }
-
 
     @Override
      /** Returns the model as a string, used for debugging. */

@@ -32,9 +32,7 @@ public class Tile {
 
     /** Return my next state.  Before I am moved or merged, I am my
      *  own successor. */
-    public Tile next() {
-        return next == null ? this : next;
-    }
+    public Tile next() { return next == null ? this : next; }
 
     /** Return a new tile at (ROW, COL) with value VALUE. */
     public static Tile create(int value, int col, int row) {

@@ -604,7 +604,9 @@ public class TestModel extends TestUtils {
         };
 
         updateModel(before, 0, 0, false);
+        System.out.println("trigger toString");
         String prevBoard = model.toString();
+        System.out.println("trigger tilt");
         boolean changed = model.tilt(Side.SOUTH);
         checkChanged(Side.SOUTH, true, changed);
         checkModel(after, 0, 0, prevBoard, Side.SOUTH);
