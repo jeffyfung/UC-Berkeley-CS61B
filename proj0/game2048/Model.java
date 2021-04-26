@@ -151,7 +151,7 @@ public class Model extends Observable {
         return changed;
     }
 
-    public int identifyMoveDestination(int c, int r, Tile ct, boolean merged) {
+    private int identifyMoveDestination(int c, int r, Tile ct, boolean merged) {
         // check tiles above current tile and compare with current tile if necessary
         for (int j = r + 1; j <= board.size() - 1; j += 1) {
             Tile tmp_tile = board.tile(c, j);
