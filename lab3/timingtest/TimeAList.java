@@ -35,8 +35,8 @@ public class TimeAList {
             for (int i = 0; i < n; i += 1) {
                 lst.addLast(10);
             }
-            n_lst.addLast(n);
             t_lst.addLast(sw.elapsedTime());
+            n_lst.addLast(n);
             n *= 2;
         }
 

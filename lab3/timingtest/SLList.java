@@ -2,7 +2,8 @@ package timingtest;
 
 /** An SLList is a list of integers, which hides the terrible truth
  * of the nakedness within. */
-public class SLList<Item> {
+public class
+SLList<Item> {
 	private class IntNode {
 		public Item item;
 		public IntNode next;
