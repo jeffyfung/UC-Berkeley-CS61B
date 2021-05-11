@@ -50,9 +50,8 @@ public class LinkedListDeque<T> {
 
     public void printDeque() {
         IntNode i = sentinel.next;
-        System.out.print(i.item);
-        while (i.next.item != null) {
-            System.out.print(" " + i.next.item);
+        while (i.item != null) {
+            System.out.print(i.item + " ");
             i = i.next;
         }
         System.out.println();
@@ -109,17 +108,17 @@ public class LinkedListDeque<T> {
         }
     }
 
-    @Override
-    public boolean equals(Object o) {
-        // check if instanceof LinkedListDeque
-        if (o instanceof LinkedListDeque) {
-            LinkedListDeque<T> temp_deq = (LinkedListDeque<T>) o;
-            return equalDequeHelper(this.sentinel.next, temp_deq.sentinel.next);
-        }
-        else {
-            return false;
-        }
-    }
+//    @Override
+//    public boolean equals(Object o) {
+//        // check if instanceof LinkedListDeque
+//        if (o instanceof LinkedListDeque) {
+//            LinkedListDeque<T> temp_deq = (LinkedListDeque<T>) o;
+//            return equalDequeHelper(this.sentinel.next, temp_deq.sentinel.next);
+//        }
+//        else {
+//            return false;
+//        }
+//    }
 
 
     private boolean equalDequeHelper(IntNode n1, IntNode n2) {

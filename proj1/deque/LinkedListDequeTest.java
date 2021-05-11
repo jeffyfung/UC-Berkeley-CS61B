@@ -181,7 +181,7 @@ public class LinkedListDequeTest {
     @Test
     public void randomizedTest() {
         LinkedListDeque<Integer> lld1 = new LinkedListDeque<>();
-        AListNoResizing<Integer> al1 = new AListNoResizing<>();
+        AListNoResizing<Integer> al1 = new AListNoResizing<Integer>();
 
         int N = 50000;
         for (int i = 0; i < N; i++) {
