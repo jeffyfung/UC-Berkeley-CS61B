@@ -175,43 +175,43 @@ public class ArrayDequeTest {
         assertEquals(8, ad1.array_size);
     }
 
-//    @Test
-//    /* Check if some lists are equal */
-//    public void compareDequeTest() {
-//
-//        ArrayDeque<Integer> l1 = new ArrayDeque<>();
-//        l1.addLast(2);
-//        l1.addLast(3);
-//        l1.addLast(4);
-//        l1.removeFirst();
-//        l1.removeLast();
-//
-//        ArrayDeque<Integer> l2 = new ArrayDeque<>();
-//        l2.addFirst(3);
-//
-//        assertTrue("Should have the same content", l1.equals(l2));
-//
-//        ArrayDeque<Integer> l3 = new ArrayDeque<>();
-//        assertFalse("Should have different contents", l1.equals(l3));
-//
-//        for (int i = 0; i < 5; i++) {
-//            l3.addFirst(100);
-//        }
-//        assertFalse("Should have different contents", l1.equals(l3));
-//        assertFalse("Should have different contents", l2.equals(l3));
-//        assertFalse("Should have different contents", l3.equals(l2));
-//
-//        /* 2 empty lists */
-//        ArrayDeque<Integer> l4 = new ArrayDeque<>();
-//        ArrayDeque<Integer> l5 = new ArrayDeque<>();
-//        assertTrue("Should have the same content (null)", l4.equals(l5));
-//
-//        for (int i = 0; i < 10; i++) {
-//            l4.addFirst(2);
-//            l5.addLast(2);
-//        }
-//        assertTrue("Should have the same content (null)", l4.equals(l5));
-//    }
+    @Test
+    /* Check if some lists are equal */
+    public void compareDequeTest() {
+
+        ArrayDeque<Integer> l1 = new ArrayDeque<>();
+        l1.addLast(2);
+        l1.addLast(3);
+        l1.addLast(4);
+        l1.removeFirst();
+        l1.removeLast();
+
+        ArrayDeque<Integer> l2 = new ArrayDeque<>();
+        l2.addFirst(3);
+
+        assertTrue("Should have the same content", l1.equals(l2));
+
+        ArrayDeque<Integer> l3 = new ArrayDeque<>();
+        assertFalse("Should have different contents", l1.equals(l3));
+
+        for (int i = 0; i < 5; i++) {
+            l3.addFirst(100);
+        }
+        assertFalse("Should have different contents", l1.equals(l3));
+        assertFalse("Should have different contents", l2.equals(l3));
+        assertFalse("Should have different contents", l3.equals(l2));
+
+        /* 2 empty lists */
+        ArrayDeque<Integer> l4 = new ArrayDeque<>();
+        ArrayDeque<Integer> l5 = new ArrayDeque<>();
+        assertTrue("Should have the same content (null)", l4.equals(l5));
+
+        for (int i = 0; i < 10; i++) {
+            l4.addFirst(2);
+            l5.addLast(2);
+        }
+        assertTrue("Should have the same content (null)", l4.equals(l5));
+    }
 
     @Test
     /* Test get & getRecursive */
@@ -297,5 +297,20 @@ public class ArrayDequeTest {
         assertEquals(1000, ad2.size());
         assertEquals(0, (int) ad2.get(0));
         assertEquals(999, (int) ad2.get(999));
+    }
+
+    @Test
+    public void forEachLoopTest() {
+        LinkedListDeque<Integer> lld1 = new LinkedListDeque<>();
+        for (int i = 0; i < 10; i++) {
+            lld1.addLast(i);
+        }
+
+        int j = 0;
+        for (int i : lld1) {
+            int tmp = i;
+            assertEquals(j, i);
+            j += 1;
+        }
     }
 }

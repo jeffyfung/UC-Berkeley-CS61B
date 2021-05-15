@@ -1,6 +1,10 @@
 package deque;
 
-public class LinkedListDeque<T> {
+import java.util.Iterator;
+import java.util.Objects;
+
+public class LinkedListDeque<T> implements Iterable<T> {
+
 
     private class IntNode {
         public T item;
@@ -64,8 +68,7 @@ public class LinkedListDeque<T> {
             sentinel.next.prev = sentinel;
             size -= 1;
             return temp.item;
-        }
-        else {
+        } else {
             return null;
         }
     }
@@ -77,8 +80,7 @@ public class LinkedListDeque<T> {
             sentinel.prev.next = sentinel;
             size -= 1;
             return temp.item;
-        }
-        else {
+        } else {
             return null;
         }
     }
@@ -102,34 +104,53 @@ public class LinkedListDeque<T> {
     private T recurHelper(int index, IntNode node) {
         if (index == 0 || node.item == null) {
             return node.item;
-        }
-        else {
+        } else {
             return recurHelper(index - 1, node.next);
         }
     }
 
-//    @Override
-//    public boolean equals(Object o) {
-//        // check if instanceof LinkedListDeque
-//        if (o instanceof LinkedListDeque) {
-//            LinkedListDeque<T> temp_deq = (LinkedListDeque<T>) o;
-//            return equalDequeHelper(this.sentinel.next, temp_deq.sentinel.next);
-//        }
-//        else {
-//            return false;
-//        }
-//    }
+    public Iterator<T> iterator() {
+        return new DequeIterator();
+    }
 
+    private class DequeIterator implements Iterator<T> {
+        private IntNode node_pos;
 
-    private boolean equalDequeHelper(IntNode n1, IntNode n2) {
-        if (n1.item == null && n2.item == null) {
+        public DequeIterator() {
+            node_pos = sentinel.next;
+        }
+
+        public boolean hasNext() {
+            return node_pos.item != null;
+        }
+
+        public T next() {
+            T tmp = (T) node_pos.item;
+            node_pos = node_pos.next;
+            return tmp;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        else if (n1.item == null || n2.item == null || !(n1.item.equals(n2.item))) {
+        if (o.getClass() != this.getClass()) {
             return false;
         }
-        else {
-            return equalDequeHelper(n1.next, n2.next);
+        if (o == null) {
+            return false;
         }
+        LinkedListDeque<T> tmp_o = (LinkedListDeque<T>) o;
+        if (size() != tmp_o.size()) {
+            return false;
+        }
+        for (int i = 0; i < size(); i++) {
+            if (!this.get(i).equals(tmp_o.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

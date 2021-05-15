@@ -1,6 +1,8 @@
 package deque;
 
-public class ArrayDeque<T> {
+import java.util.Iterator;
+
+public class ArrayDeque<T> implements Iterable<T> {
     T[] items;
     int size;
     int nextFirst;
@@ -121,7 +123,7 @@ public class ArrayDeque<T> {
 
         items = temp_ad;
         nextFirst = (des_idx - 1 + array_size) % array_size;
-        nextLast = (nextFirst + size) % array_size + 1;
+        nextLast = (nextFirst + size + 1) % array_size;
     }
 
     public T get(int index) {
@@ -132,28 +134,48 @@ public class ArrayDeque<T> {
         return null;
     }
 
-//    public Iterator<T> iterator() {}
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
+    }
 
-//    public boolean equals (Object o) {
-//        if (o instanceof ArrayDeque) {
-//            ArrayDeque<T> temp_deq = (ArrayDeque<T>) o; // cannot just cast because the 2 lists may contain different types
-//            if (isEmpty() && ((ArrayDeque<T>) o).isEmpty()) {
-//                return true;
-//            }
-//            if (size() != o.size()) {
-//                return false;
-//            }
-//
-//            int i = nextFirst + 1;
-//            int j = o.nextFirst + 1;
-//            while (i != nextLast && j != o.nextLast) {
-//                if (items[i] != temp_deq[i]) {
-//                    return false;
-//                }
-//                i = (i + 1) % array_size;
-//                j = (j + 1) % o.array_size;
-//            }
-//            return false;
-//        }
-//    }
+    private class ArrayDequeIterator implements Iterator<T> {
+        private int pos;
+
+        public ArrayDequeIterator() {
+            pos = 0;
+        }
+
+        public boolean hasNext() {
+            return pos < size;
+        }
+
+        public T next() {
+            T item = ArrayDeque.this.get(pos);
+            pos += 1;
+            return item;
+        }
+    }
+
+    @Override
+    public boolean equals (Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o.getClass() != this.getClass()) {
+            return false;
+        }
+        if (o == null) {
+            return false;
+        }
+        ArrayDeque<T> tmp_o = (ArrayDeque<T>) o;
+        if (size() != tmp_o.size()) {
+            return false;
+        }
+        for (int i = 0; i < size(); i++) {
+            if (!this.get(i).equals(tmp_o.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

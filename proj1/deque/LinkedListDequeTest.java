@@ -133,6 +133,7 @@ public class LinkedListDequeTest {
         LinkedListDeque<Integer> l2 = new LinkedListDeque<>();
         l2.addFirst(3);
 
+        boolean tmp = l1.equals(l2);
         assertTrue("Should have the same content", l1.equals(l2));
 
         LinkedListDeque<Integer> l3 = new LinkedListDeque<>();
@@ -209,6 +210,21 @@ public class LinkedListDequeTest {
                     assertEquals(lld1.removeLast(), al1.removeLast());
                 }
             }
+        }
+    }
+
+    @Test
+    public void forEachLoopTest() {
+        LinkedListDeque<Integer> lld1 = new LinkedListDeque<>();
+        for (int i = 0; i < 10; i++) {
+            lld1.addLast(i);
+        }
+
+        int j = 0;
+        for (int i : lld1) {
+            int tmp = i;
+            assertEquals(j, i);
+            j += 1;
         }
     }
 }
