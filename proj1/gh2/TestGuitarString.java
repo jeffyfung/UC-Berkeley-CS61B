@@ -14,7 +14,8 @@ public class TestGuitarString  {
 
     @Test
     public void testPluckTheAString() {
-        GuitarString aString = new GuitarString(GuitarHeroLite.CONCERT_A);
+        Double concert_a = 440.0 * Math.pow(2, (double) (0-24) / 12);
+        GuitarString aString = new GuitarString(concert_a); //CONCERT_A
         aString.pluck();
         for (int i = 0; i < 50000; i += 1) {
             StdAudio.play(aString.sample());
