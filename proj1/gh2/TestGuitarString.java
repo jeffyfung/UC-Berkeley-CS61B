@@ -39,7 +39,7 @@ public class TestGuitarString  {
 
     @Test
     public void testTic() {
-        GuitarString s = new GuitarString(100);
+        GuitarString s = new GuitarString(1000); //100
         assertEquals(0.0, s.sample(), 0.0);
         assertEquals(0.0, s.sample(), 0.0);
         assertEquals(0.0, s.sample(), 0.0);

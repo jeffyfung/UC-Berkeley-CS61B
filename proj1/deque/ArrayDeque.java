@@ -1,8 +1,10 @@
 package deque;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
-public class ArrayDeque<T> implements Iterable<T> {
+public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
     T[] items;
     int size;
     int nextFirst;
@@ -10,7 +12,6 @@ public class ArrayDeque<T> implements Iterable<T> {
     int array_size;
 
     public ArrayDeque() {
-
         array_size = 8;
         items = (T[]) new Object[array_size];
         nextFirst = 0;
@@ -18,8 +19,8 @@ public class ArrayDeque<T> implements Iterable<T> {
         size = 0;
     }
 
+    @Override
     public void addFirst(T item) {
-
         items[nextFirst] = item;
         nextFirst = (nextFirst - 1 + array_size) % array_size;
         size += 1;
@@ -29,9 +30,8 @@ public class ArrayDeque<T> implements Iterable<T> {
         }
     }
 
-
+    @Override
     public void addLast(T item) {
-
         items[nextLast] = item;
         nextLast = (nextLast + 1) % array_size;
         size += 1;
@@ -42,7 +42,6 @@ public class ArrayDeque<T> implements Iterable<T> {
     }
 
     private void resize(int factor) {
-
         int last_seg_len = array_size - nextFirst;
         array_size *= factor;
         T[] temp_ad = (T[]) new Object[array_size];
@@ -52,26 +51,22 @@ public class ArrayDeque<T> implements Iterable<T> {
         nextFirst = array_size - last_seg_len;
     }
 
-    public boolean isEmpty() {
-        return (size == 0);
-    }
-
+    @Override
     public int size() {
         return size;
     }
 
+    @Override
     public void printDeque() {
-
-        int i = (nextFirst + 1) % array_size;
-        while (i != nextLast) {
-            System.out.print(items[i] + " ");
-            i = (i + 1) % array_size;
+        List<String> tmp_list = new ArrayList<>();
+        for (T x : this) {
+            tmp_list.add(x.toString());
         }
-        System.out.println();
+        String.join(", ", tmp_list);
     }
 
+    @Override
     public T removeFirst() {
-
         if (!isEmpty()) {
             if (array_size >= 16 && usage_factor() < 0.25) {
                 downsize(2);
@@ -85,8 +80,8 @@ public class ArrayDeque<T> implements Iterable<T> {
         return null;
     }
 
+    @Override
     public T removeLast() {
-
         if (array_size >= 16 && usage_factor() < 0.25) {
             downsize(2);
         }
@@ -105,7 +100,6 @@ public class ArrayDeque<T> implements Iterable<T> {
     }
 
     private void downsize(int factor) {
-
         int temp_array_size = array_size;
         array_size /= factor;
         T[] temp_ad = (T[]) new Object[array_size];
@@ -126,8 +120,8 @@ public class ArrayDeque<T> implements Iterable<T> {
         nextLast = (nextFirst + size + 1) % array_size;
     }
 
+    @Override
     public T get(int index) {
-
         if (!isEmpty() && index < size) {
             return items[(nextFirst + 1 + index) % array_size];
         }

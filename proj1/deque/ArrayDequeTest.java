@@ -301,14 +301,15 @@ public class ArrayDequeTest {
 
     @Test
     public void forEachLoopTest() {
-        LinkedListDeque<Integer> lld1 = new LinkedListDeque<>();
+        ArrayDeque<Integer> ad1 = new ArrayDeque<>();
         for (int i = 0; i < 10; i++) {
-            lld1.addLast(i);
+            ad1.addLast(i);
         }
 
         int j = 0;
-        for (int i : lld1) {
+        for (int i : ad1) {
             int tmp = i;
+            System.out.println(i);
             assertEquals(j, i);
             j += 1;
         }
