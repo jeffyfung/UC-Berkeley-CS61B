@@ -1,10 +1,12 @@
 package capers;
 
 import java.io.File;
+import java.io.IOException;
+
 import static capers.Utils.*;
 
 /** A repository for Capers 
- * @author TODO
+ * @author jeffreyfung
  * The structure of a Capers Repository is as follows:
  *
  * .capers/ -- top level folder for all persistent data in your lab12 folder
@@ -18,8 +20,10 @@ public class CapersRepository {
     static final File CWD = new File(System.getProperty("user.dir"));
 
     /** Main metadata folder. */
-    static final File CAPERS_FOLDER = null; // TODO Hint: look at the `join`
-                                            //      function in Utils
+    static final File CAPERS_FOLDER = new File(".capers");
+    // TODO Hint: look at the `join` function in Utils
+
+    static final File STORY = join(CAPERS_FOLDER, "story");
 
     /**
      * Does required filesystem operations to allow for persistence.
@@ -32,6 +36,14 @@ public class CapersRepository {
      */
     public static void setupPersistence() {
         // TODO
+        CAPERS_FOLDER.mkdir();
+        Dog.DOG_FOLDER.mkdir();
+        try {
+            STORY.createNewFile();
+        }
+        catch (IOException e){
+            System.err.println(e);
+        }
     }
 
     /**
@@ -41,6 +53,9 @@ public class CapersRepository {
      */
     public static void writeStory(String text) {
         // TODO
+        String original = Utils.readContentsAsString(STORY);
+        Utils.writeContents(STORY, original, text, "\n");
+        System.out.println(Utils.readContentsAsString(STORY));
     }
 
     /**
@@ -50,6 +65,9 @@ public class CapersRepository {
      */
     public static void makeDog(String name, String breed, int age) {
         // TODO
+        Dog d = new Dog(name, breed, age);
+        d.saveDog();
+        System.out.println(d.toString());
     }
 
     /**
@@ -60,5 +78,8 @@ public class CapersRepository {
      */
     public static void celebrateBirthday(String name) {
         // TODO
+        Dog bd = Dog.fromFile(name);
+        bd.haveBirthday();
+        bd.saveDog();
     }
 }
