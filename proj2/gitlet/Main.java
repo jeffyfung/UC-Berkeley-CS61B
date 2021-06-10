@@ -1,8 +1,8 @@
 package gitlet;
 
-// import gitlet.Commit;
-// import gitlet.Dumpable;
-import gitlet;
+import gitlet.Utils;
+import gitlet.GitletException;
+import gitlet.Repository;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
  *  @author Jeffrey Fung
@@ -15,17 +15,28 @@ public class Main {
     public static void main(String[] args) {
         // TODO: what if args is empty?
         if (args.length == 0) {
-            Utils.error("Must have at least one argument");
+            throw Utils.error("Must have at least one argument");
         }
         String firstArg = args[0];
         switch(firstArg) {
             case "init":
                 // TODO: handle the `init` command
+                validateNumArgs("init", args, 1);
+                Repository.initRepo();
                 break;
             case "add":
                 // TODO: handle the `add [filename]` command
+                validateNumArgs("add", args, 2);
+                Repository.add(args[1]);
                 break;
             // TODO: FILL THE REST IN
+        }
+    }
+
+    public static void validateNumArgs(String cmd, String[] args, int n) {
+        if (args.length != n) {
+            throw new RuntimeException(
+                    String.format("Invalid number of arguments for: %s.", cmd));
         }
     }
 }
