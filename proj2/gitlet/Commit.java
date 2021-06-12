@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Date; // TODO: You'll likely use this in this class
@@ -32,13 +33,11 @@ public class Commit implements Serializable {
     /** Commit date */
     private Date commitDate;
     /** Map from file name to blob hash. Indicates which version of content does the commit tracks. */
-    Map<String, String> blobMap;
+    private Map<String, String> blobMap;
     /** Hash of (first) parent commit. Can be used to trace back to initial commit */
     private String parentCommitHash;
     /** Hash of second parent commit. Null for non-merge commit */
     private String secondParentCommitHash;
-//    /** Hash of this commit */
-//    private String commitHash;
     /** Map from commit hash to runtime commit object. Not serialized */
     static transient Map<String, Commit> commitCache = new TreeMap<>();
     /** Parent commit object. Not serialized. */
@@ -57,8 +56,40 @@ public class Commit implements Serializable {
      * commitMsg = "initial commit" and no parent. */
     static void makeInitCommit(){
         Date initDate = Date.from(Instant.parse("1970-01-01T00:00:00Z"));
-        Commit initCommit = new Commit("initial commit", initDate, null, new TreeMap<>());
+        Commit initCommit = new Commit("initial commit", initDate,
+                null, new Repository.StringTreeMap());
         commitHelper(initCommit);
+    }
+
+    // update to accommodate rm command (staged for removal)
+    /** Create a new commit. Its parent commit is the HEAD of current branch and is represented by hash.
+     *  Record the time of commit. Its blobMap is identical to the parent except for files in STAGE.
+     *  If parent commit does not contain a blobMap (i.e. init commit), the new blobMap contains
+     *  only reference to files in STAGE in the format of (file name -> blob hash of serialized file content)
+     *  */
+    public static void makeCommit(String commitMsg) {
+        List<String> filesInStage = plainFilenamesIn(Repository.STAGE);
+        if (filesInStage.size() == 0) {
+            throw Utils.error("No changes added to the commit.");
+        }
+        // need to accommodate for rm
+        Date curDate = new Date();
+        String parentCommitHash = Repository.getHeadHash();
+        Commit parentCommit = Repository.getCommitFromHash(parentCommitHash);
+        Map<String, String> parentBlobMap = parentCommit.getBlobMap();
+        Map<String, String> commitBlobMap = new Repository.StringTreeMap();
+        if (parentBlobMap != null) {
+            commitBlobMap.putAll(parentBlobMap);
+        }
+        for (String f : filesInStage) {
+            byte[] blobBytes = readContents(join(Repository.STAGE, f));
+            String blobHash = sha1(blobBytes);
+            writeContents(join(Repository.BLOBS, blobHash), blobBytes);
+            commitBlobMap.put(f, blobHash);
+        }
+        Commit curCommit = new Commit(commitMsg, curDate, parentCommitHash, commitBlobMap);
+        curCommit.parentCommit = parentCommit;
+        commitHelper(curCommit);
     }
 
     /** Private helper method to dump commit object into newly created file
@@ -79,6 +110,9 @@ public class Commit implements Serializable {
         Repository.headMap.put(Repository.currentBranch, commitHash);
         writeObject(join(Repository.GITLET_DIR, "headMap"), (Serializable) Repository.headMap);
         commitCache.put(commitHash, c);
+    }
 
+    public Map<String, String> getBlobMap(){
+        return this.blobMap;
     }
 }

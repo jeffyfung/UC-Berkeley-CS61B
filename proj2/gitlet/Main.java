@@ -29,12 +29,17 @@ public class Main {
                 validateNumArgs("add", args, 2);
                 Repository.add(args[1]);
                 break;
-            // TODO: FILL THE REST IN
+            case "commit":
+                validateNumArgs("commit", args,2);
+                Repository.commit(args[1]);
         }
     }
 
     public static void validateNumArgs(String cmd, String[] args, int n) {
         if (args.length != n) {
+            if (cmd.equals("commit") && args.length == 1) {
+                throw Utils.error("Please enter a commit message.");
+            }
             throw new RuntimeException(
                     String.format("Invalid number of arguments for: %s.", cmd));
         }
