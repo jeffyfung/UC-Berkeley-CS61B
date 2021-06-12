@@ -32,7 +32,7 @@ public class Commit implements Serializable {
     /** Commit date */
     private Date commitDate;
     /** Map from file name to blob hash. Indicates which version of content does the commit tracks. */
-    private Map<String, String> blobMap;
+    Map<String, String> blobMap;
     /** Hash of (first) parent commit. Can be used to trace back to initial commit */
     private String parentCommitHash;
     /** Hash of second parent commit. Null for non-merge commit */
@@ -46,19 +46,19 @@ public class Commit implements Serializable {
     /** Second parent commit object. Not serialized. */
     private transient Commit secondParentCommit;
 
-    public Commit(String commitMsg, Date commitDate, String parentCommitHash) {
+    public Commit(String commitMsg, Date commitDate, String parentCommitHash, Map<String, String> blobMap) {
         this.commitMsg = commitMsg;
         this.commitDate = commitDate;
         this.parentCommitHash = parentCommitHash;
+        this.blobMap = blobMap;
     }
 
     /** Create a commit object with commitDate = 00:00:00 UTC, Thursday, 1 January 1970,
      * commitMsg = "initial commit" and no parent. */
     static void makeInitCommit(){
         Date initDate = Date.from(Instant.parse("1970-01-01T00:00:00Z"));
-        Commit initCommit = new Commit("initial commit", initDate, null);
+        Commit initCommit = new Commit("initial commit", initDate, null, new TreeMap<>());
         commitHelper(initCommit);
-//        System.out.println("Date: " + initDate);
     }
 
     /** Private helper method to dump commit object into newly created file
@@ -77,6 +77,8 @@ public class Commit implements Serializable {
         writeContents(cf, commitByte);
 
         Repository.headMap.put(Repository.currentBranch, commitHash);
+        writeObject(join(Repository.GITLET_DIR, "headMap"), (Serializable) Repository.headMap);
         commitCache.put(commitHash, c);
+
     }
 }
