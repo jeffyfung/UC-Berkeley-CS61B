@@ -124,8 +124,17 @@ public class Repository {
      *  starting with current commit. For merge commits, ignore second parents.
      *  Print out the commit id, time and commit message of each commit. */
     // update to account for merge commits
-    static void log(){
+    static void log() {
         logHelper(getHeadHash());
+    }
+
+    /** Display information of every commit in the gitlet repository in lexicographic
+     *  order of their hash strings, formatted as specified in displayCommitInfo. */
+    static void globalLog() {
+        for (String curCommitHash : plainFilenamesIn(Commit.COMMITS)) {
+            Commit curCommit = getCommitFromHash(curCommitHash);
+            displayCommitInfo(curCommitHash, curCommit);
+        }
     }
 
     /** Traverse up the commit tree (from current head to initial commit) recursively.
@@ -135,12 +144,16 @@ public class Repository {
             return;
         }
         Commit curCommit = getCommitFromHash(curCommitHash);
-        System.out.println("===");
-        System.out.println("commit ".concat(curCommitHash));
-        // insert merge numerals for merge commits -> "Merge: "
-        System.out.println("Date: ".concat(curCommit.getCommitDate().toString()));
-        System.out.println(curCommit.getCommitMsg().concat("\n"));
+        displayCommitInfo(curCommitHash, curCommit);
         logHelper(curCommit.getParentCommitHash());
+    }
+
+    private static void displayCommitInfo(String hash, Commit commit){
+        System.out.println("===");
+        System.out.println("commit ".concat(hash));
+        // insert merge numerals for merge commits -> "Merge: "
+        System.out.println("Date: ".concat(commit.getCommitDate().toString()));
+        System.out.println(commit.getCommitMsg().concat("\n"));
     }
 
     private static void clearStage(){
@@ -151,7 +164,7 @@ public class Repository {
         }
     }
 
-    /** Get hash string of current branch HEAD Check if headMap is empty.
+    /** Get hash string of current branch head. Check if headMap is empty.
      *  If empty, deserialize headMap file. */
     static String getHeadHash() {
         if (headMap.isEmpty()) {
