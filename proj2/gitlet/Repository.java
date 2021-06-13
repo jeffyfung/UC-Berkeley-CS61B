@@ -99,9 +99,8 @@ public class Repository {
 
     /** 1) If the file is currently staged for addition, unstage it.
      *  2) If the file is tracked in the current commit, stage it for removal and
-     *  remove the file from CWD*/
+     *  if the file is in CWD, remove it from CWD*/
     static void remove(String fileName){
-        // check if STAGE contains fileName
         if (plainFilenamesIn(STAGE).contains(fileName)){
             if (!join(STAGE, fileName).delete()){
                 throw Utils.error("Error when deleting %s from staging area.", fileName);
@@ -109,7 +108,6 @@ public class Repository {
         }
         // check if current commit contains fileName
         else if (getCommitFromHash(getHeadHash()).getBlobMap().containsKey(fileName)) {
-            // STAGE for removal - annotate at the front by KeyString
             File fileStagedForRemoval = join(STAGE, keyString.concat(fileName));
             createFile(fileStagedForRemoval);
             // delete fileName from CWD. return false if fileName does not exist in CWD
@@ -137,6 +135,23 @@ public class Repository {
         }
     }
 
+    /** Display the hashes of commits that have the input commit message, one per line,
+     *  in lexicographical order of the hashes. */
+    static void find(String msg) {
+        // for each loop over a list of all commits hashes in COMMIT
+        // for each hash, restore the commit object and its commitMsg -> display if equals
+        boolean msgOutputted = false;
+        for (String curCommitHash : plainFilenamesIn(Commit.COMMITS)) {
+            if (getCommitFromHash(curCommitHash).getCommitMsg().equals(msg)) {
+                System.out.println(curCommitHash);
+                msgOutputted = true;
+            }
+        }
+        if (!msgOutputted){
+            throw Utils.error("Found no commit with that message.");
+        }
+    }
+
     /** Traverse up the commit tree (from current head to initial commit) recursively.
      *  Print out the commit id, time and commit message for each commit traversed. */
     private static void logHelper(String curCommitHash) {
@@ -148,6 +163,8 @@ public class Repository {
         logHelper(curCommit.getParentCommitHash());
     }
 
+    /** Display information of a commit. */
+    // update to account for merge commits
     private static void displayCommitInfo(String hash, Commit commit){
         System.out.println("===");
         System.out.println("commit ".concat(hash));
@@ -156,6 +173,7 @@ public class Repository {
         System.out.println(commit.getCommitMsg().concat("\n"));
     }
 
+    /** Clear the STAGE directory */
     private static void clearStage(){
         for (String f : plainFilenamesIn(STAGE)){
             if (!join(STAGE, f).delete()) {
@@ -178,7 +196,7 @@ public class Repository {
     static Commit getCommitFromHash(String hash) {
         if (!Commit.commitCache.containsKey(hash)) {
             Commit targetCommit = readObject(join(Commit.COMMITS, hash), Commit.class);
-            Commit.commitCache.put(hash, targetCommit);
+            Commit.commitCache.put(hash, targetCommit); // hashmap -> O(1) for insertion, access
             return targetCommit;
         }
         return Commit.commitCache.get(hash);

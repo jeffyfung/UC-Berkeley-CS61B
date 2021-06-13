@@ -8,10 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.Date; // TODO: You'll likely use this in this class
+import java.util.*;
 
 /** Represents a gitlet commit object.
  *  Allows commit object to be hashed and serialized to file named with the hash.
@@ -39,7 +36,7 @@ public class Commit implements Serializable {
     /** Hash of second parent commit. Null for non-merge commit */
     private String secondParentCommitHash;
     /** Map from commit hash to runtime commit object. Not serialized */
-    static transient Map<String, Commit> commitCache = new TreeMap<>();
+    static transient Map<String, Commit> commitCache = new HashMap<>();
     /** Parent commit object. Not serialized. */
     private transient Commit parentCommit;
     /** Second parent commit object. Not serialized. */

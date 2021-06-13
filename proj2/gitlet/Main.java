@@ -45,6 +45,10 @@ public class Main {
                 validateNumArgs("global-log", args, 1);
                 Repository.globalLog();
             }
+            case "find" -> {
+                validateNumArgs("find", args, 2);
+                Repository.find(args[1]);
+            }
         }
     }
 
