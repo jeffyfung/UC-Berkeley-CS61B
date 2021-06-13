@@ -3,7 +3,6 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
 import static java.nio.file.StandardCopyOption.*;
@@ -121,6 +120,28 @@ public class Repository {
         }
     }
 
+    /** Display the history of commit starting from current head commit to initial commit,
+     *  starting with current commit. For merge commits, ignore second parents.
+     *  Print out the commit id, time and commit message of each commit. */
+    // update to account for merge commits
+    static void log(){
+        logHelper(getHeadHash());
+    }
+
+    /** Traverse up the commit tree (from current head to initial commit) recursively.
+     *  Print out the commit id, time and commit message for each commit traversed. */
+    private static void logHelper(String curCommitHash) {
+        if (curCommitHash == null) {
+            return;
+        }
+        Commit curCommit = getCommitFromHash(curCommitHash);
+        System.out.println("===");
+        System.out.println("commit ".concat(curCommitHash));
+        // insert merge numerals for merge commits -> "Merge: "
+        System.out.println("Date: ".concat(curCommit.getCommitDate().toString()));
+        System.out.println(curCommit.getCommitMsg().concat("\n"));
+        logHelper(curCommit.getParentCommitHash());
+    }
 
     private static void clearStage(){
         for (String f : plainFilenamesIn(STAGE)){
@@ -131,7 +152,7 @@ public class Repository {
     }
 
     /** Get hash string of current branch HEAD Check if headMap is empty.
-     *  If empty, deserialize headMap file */
+     *  If empty, deserialize headMap file. */
     static String getHeadHash() {
         if (headMap.isEmpty()) {
             headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
@@ -139,7 +160,8 @@ public class Repository {
         return headMap.get(currentBranch);
     }
 
-    /** Get blobMap of a commit from its hash. Cache the (hash, commit) pair if it has not been done so*/
+    /** Get a commit object from its hash.
+     * Cache the (hash, commit) pair if it has not been done so. */
     static Commit getCommitFromHash(String hash) {
         if (!Commit.commitCache.containsKey(hash)) {
             Commit targetCommit = readObject(join(Commit.COMMITS, hash), Commit.class);

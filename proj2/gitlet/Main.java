@@ -18,25 +18,29 @@ public class Main {
             throw Utils.error("Must have at least one argument");
         }
         String firstArg = args[0];
-        switch(firstArg) {
-            case "init":
+        switch (firstArg) {
+            case "init" -> {
                 // TODO: handle the `init` command
                 validateNumArgs("init", args, 1);
                 Repository.initRepo();
-                break;
-            case "add":
+            }
+            case "add" -> {
                 // TODO: handle the `add [filename]` command
                 validateNumArgs("add", args, 2);
                 Repository.add(args[1]);
-                break;
-            case "commit":
-                validateNumArgs("commit", args,2);
+            }
+            case "commit" -> {
+                validateNumArgs("commit", args, 2);
                 Repository.commit(args[1]);
-                break;
-            case "rm":
+            }
+            case "rm" -> {
                 validateNumArgs("rm", args, 2);
                 Repository.remove(args[1]);
-                break;
+            }
+            case "log" -> {
+                validateNumArgs("log", args, 1);
+                Repository.log();
+            }
         }
     }
 

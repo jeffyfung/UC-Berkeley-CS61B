@@ -29,13 +29,13 @@ public class Commit implements Serializable {
     /** The commits directory */
     static final File COMMITS = join(Repository.GITLET_DIR, "commits");
     /** The message of this Commit. */
-    private String commitMsg;
+    private final String commitMsg;
     /** Commit date */
-    private Date commitDate;
+    private final Date commitDate;
     /** Map from file name to blob hash. Indicates which version of content does the commit tracks. */
-    private Map<String, String> blobMap;
+    private final Map<String, String> blobMap;
     /** Hash of (first) parent commit. Can be used to trace back to initial commit */
-    private String parentCommitHash;
+    private final String parentCommitHash;
     /** Hash of second parent commit. Null for non-merge commit */
     private String secondParentCommitHash;
     /** Map from commit hash to runtime commit object. Not serialized */
@@ -118,4 +118,10 @@ public class Commit implements Serializable {
     public Map<String, String> getBlobMap(){
         return this.blobMap;
     }
+
+    public Date getCommitDate() { return this.commitDate; }
+
+    public String getCommitMsg() { return this.commitMsg; }
+
+    public String getParentCommitHash() { return this.parentCommitHash; }
 }
