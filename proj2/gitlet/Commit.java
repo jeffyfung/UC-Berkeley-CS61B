@@ -72,7 +72,6 @@ public class Commit implements Serializable {
         if (filesInStage.size() == 0) {
             throw Utils.error("No changes added to the commit.");
         }
-        // need to accommodate for rm
         Date curDate = new Date();
         String parentCommitHash = Repository.getHeadHash();
         Commit parentCommit = Repository.getCommitFromHash(parentCommitHash);
@@ -82,6 +81,16 @@ public class Commit implements Serializable {
             commitBlobMap.putAll(parentBlobMap);
         }
         for (String f : filesInStage) {
+            // check stage for removal by checking if fileName starts with "-del-"
+                // if so remove corresponding key from commitBlobMap
+            // if fileName does not exist in current commit (i.e. commitBlobMap)
+                // -> address exception in Repository.remove
+            int keyStringLen = Repository.keyString.length();
+            if (f.length() > keyStringLen
+                    && f.substring(0, keyStringLen).equals(Repository.keyString)) {
+                commitBlobMap.remove(f.substring(keyStringLen));
+                continue;
+            }
             byte[] blobBytes = readContents(join(Repository.STAGE, f));
             String blobHash = sha1(blobBytes);
             writeContents(join(Repository.BLOBS, blobHash), blobBytes);
@@ -99,12 +108,6 @@ public class Commit implements Serializable {
         byte[] commitByte = serialize(c);
         String commitHash = sha1(commitByte);
         File cf = join(COMMITS, commitHash);
-        try {
-            cf.createNewFile();
-        }
-        catch (IOException e){
-            System.err.println(e);
-        }
         writeContents(cf, commitByte);
 
         Repository.headMap.put(Repository.currentBranch, commitHash);

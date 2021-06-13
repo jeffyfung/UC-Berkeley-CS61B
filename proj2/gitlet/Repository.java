@@ -39,6 +39,8 @@ public class Repository {
     static Map<String, String> headMap = new StringTreeMap();
     /** Name of current branch */
     static String currentBranch = "master"; // retrieve from serializable?
+    /** label for files that are staged to be removed */
+    static String keyString = "[[del[[";
 //    /** Map from blob hash to file name */
 //    static Map<String, String> blobToFileNameMap = new TreeMap<>();
     /* TODO: fill in the rest of this class. */
@@ -72,10 +74,11 @@ public class Repository {
         String fileHash = sha1(readContents(join(CWD, fileName)));
         String targetBlobHash = getCommitFromHash(getHeadHash()).getBlobMap().get(fileName); // O(log N)
         if (targetBlobHash != null && targetBlobHash.equals(fileHash)) {
-            if (plainFilenamesIn(STAGE).contains(fileName)) {
-                // if contains same file (by name) in staging area -> remove file from staging area
-                join(STAGE, fileName).delete();
-            }
+            join(STAGE, fileName).delete();
+            // current commit contains the same version of file as the one in CWD
+            // delete the file from CWD without any staging
+            // return true if successfully deleted; return false if the file is not in STAGE
+            // no further action required for both cases
         }
         else {
             try {
@@ -95,6 +98,30 @@ public class Repository {
         clearStage();
     }
 
+    /** 1) If the file is currently staged for addition, unstage it.
+     *  2) If the file is tracked in the current commit, stage it for removal and
+     *  remove the file from CWD*/
+    static void remove(String fileName){
+        // check if STAGE contains fileName
+        if (plainFilenamesIn(STAGE).contains(fileName)){
+            if (!join(STAGE, fileName).delete()){
+                throw Utils.error("Error when deleting %s from staging area.", fileName);
+            }
+        }
+        // check if current commit contains fileName
+        else if (getCommitFromHash(getHeadHash()).getBlobMap().containsKey(fileName)) {
+            // STAGE for removal - annotate at the front by KeyString
+            File fileStagedForRemoval = join(STAGE, keyString.concat(fileName));
+            createFile(fileStagedForRemoval);
+            // delete fileName from CWD. return false if fileName does not exist in CWD
+            restrictedDelete(fileName);
+        }
+        else {
+            throw Utils.error("No reason to remove the file.");
+        }
+    }
+
+
     private static void clearStage(){
         for (String f : plainFilenamesIn(STAGE)){
             if (!join(STAGE, f).delete()) {
@@ -109,7 +136,6 @@ public class Repository {
         if (headMap.isEmpty()) {
             headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
         }
-//        System.out.println("headmap: " + headMap);
         return headMap.get(currentBranch);
     }
 
@@ -121,6 +147,15 @@ public class Repository {
             return targetCommit;
         }
         return Commit.commitCache.get(hash);
+    }
+
+    static void createFile(File f){
+        try {
+            f.createNewFile();
+        }
+        catch (IOException e){
+            throw Utils.error("Encounter IOException when creating new file ((%s))", f);
+        }
     }
 
     public static class StringTreeMap extends TreeMap<String, String> {}
