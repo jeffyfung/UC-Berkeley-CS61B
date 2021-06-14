@@ -1,6 +1,5 @@
 package gitlet;
 
-// TODO: any imports you need here
 
 import static gitlet.Utils.*;
 
@@ -16,7 +15,6 @@ import java.util.*;
  */
 public class Commit implements Serializable {
     /**
-     * TODO: add instance variables here.
      *
      * List all instance variables of the Commit class here with a useful
      * comment above them describing what that variable represents and how that
@@ -82,10 +80,9 @@ public class Commit implements Serializable {
                 // if so remove corresponding key from commitBlobMap
             // if fileName does not exist in current commit (i.e. commitBlobMap)
                 // -> address exception in Repository.remove
-            int keyStringLen = Repository.keyString.length();
-            if (f.length() > keyStringLen
-                    && f.substring(0, keyStringLen).equals(Repository.keyString)) {
-                commitBlobMap.remove(f.substring(keyStringLen));
+            if (f.length() > Repository.keyStringLen
+                    && f.substring(0, Repository.keyStringLen).equals(Repository.keyString)) {
+                commitBlobMap.remove(f.substring(Repository.keyStringLen));
                 continue;
             }
             byte[] blobBytes = readContents(join(Repository.STAGE, f));

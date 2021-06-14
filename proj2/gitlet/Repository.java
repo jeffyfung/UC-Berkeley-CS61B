@@ -3,13 +3,11 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+
 import static java.nio.file.StandardCopyOption.*;
 
 import static gitlet.Utils.*;
-
-// TODO: any imports you need here
 
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
@@ -18,13 +16,9 @@ import static gitlet.Utils.*;
  *  @author Jeffrey Fung
  */
 public class Repository {
-    /**
-     * TODO: add instance variables here.
-     *
-     * List all instance variables of the Repository class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided two examples for you.
-     */
+    /** List all instance variables of the Repository class here with a useful
+     *  comment above them describing what that variable represents and how that
+     *  variable is used. We've provided two examples for you. */
 
     /** The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
@@ -40,9 +34,9 @@ public class Repository {
     static String currentBranch = "master"; // retrieve from serializable?
     /** label for files that are staged to be removed */
     static String keyString = "[[del[[";
+    static int keyStringLen = keyString.length();
 //    /** Map from blob hash to file name */
 //    static Map<String, String> blobToFileNameMap = new TreeMap<>();
-    /* TODO: fill in the rest of this class. */
 
     /** Call setupPersistence to create folders holding .gitlet, stage, commits, blobs.
      * Make an initial commit by calling makeInitCommit.
@@ -152,6 +146,173 @@ public class Repository {
         }
     }
 
+    /** Display information on branches, file(s) staged for addition or removal,
+     *  modifications not staged for commit and untracked files. Mark the current
+     *  branch with an asterisk. Entries listed in lexicographical order, not
+     *  counting asterisk. */
+    // confirm compatibility with branching
+    static void status() {
+        List<String> filesInCWD = plainFilenamesIn(CWD);
+        List<String> filesInStage = plainFilenamesIn(STAGE);
+        Map<String, String> curCommitBlobMap = getCommitFromHash(getHeadHash()).getBlobMap();
+        displayBranchInfo();
+        displayStagedFiles(filesInStage);
+        displayModificationsNotStagedForCommit(filesInCWD, filesInStage, curCommitBlobMap);
+        displayUntrackedFiles(filesInCWD, filesInStage, curCommitBlobMap);
+    }
+
+    /** Copy the file as it exists in the head commit to CWD. Overwrite if necessary.
+     *  No need to stage the file. */
+    static void checkout(String fileName) {
+        // read from file from head commit
+        // write to file of same name in CWD
+        String blobHash = getCommitFromHash(getHeadHash()).getBlobMap().get(fileName);
+        if (blobHash == null) {
+            throw Utils.error("File does not exist in that commit.");
+        }
+        String fileContent = readContentsAsString(join(BLOBS, blobHash));
+        writeContents(new File(fileName), fileContent);
+    }
+
+    /** Copy the file as it exists in the commit specified by the hash to CWD. Overwrite
+     *  if necessary. No need to stage the file. */
+    static void checkout(String commitHash, String fileName) {
+        String blobHash = getCommitFromHash(commitHash).getBlobMap().get(fileName);
+        if (blobHash == null) {
+            throw Utils.error("File does not exist in that commit.");
+        }
+        String fileContent = readContentsAsString(join(BLOBS, blobHash));
+        writeContents(new File(fileName), fileContent);
+    }
+
+    /** Copy all files tracked by the head commit of the given branch to CWD. Overwrite
+     *  if necessary. Any file not tracked by the head commit of given branch
+     *  will be deleted from CWD. Clear the staging area unless the given branch
+     *  is the current branch. Set this as the current branch. */
+    static void checkoutBranch(String branchName){
+        System.out.println("feature: checking out branch - to be updated");
+    }
+
+    /** Loop over headMap and print all branch names in lexicographical order. Add an asterisk in front
+     *  of the name of current branch. */
+    static void displayBranchInfo() {
+        System.out.println("=== Branches ===");
+        if (headMap.isEmpty()) {
+            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
+        }
+        for (Map.Entry<String, String> branchPair : headMap.entrySet()) {
+            if (branchPair.getKey().equals(currentBranch)) {
+                System.out.println("*".concat(branchPair.getKey()));
+            }
+            else { System.out.println(branchPair.getKey()); }
+        }
+        System.out.println();
+    }
+
+    /** Loop over all files in STAGE to print out a list of files staged for addition and a list of
+     *  files staged for removal. Listed in lexicographical order. */
+    static void displayStagedFiles(List<String> filesInStage) {
+        StringBuilder stagedFiles = new StringBuilder();
+        StringBuilder filesStagedForRemoval = new StringBuilder();
+        for (String f : filesInStage) {
+            if (f.length() > keyStringLen
+                    && f.substring(0, keyStringLen).equals(Repository.keyString)) {
+                filesStagedForRemoval.append(f.substring(keyStringLen));
+                filesStagedForRemoval.append("\n");
+            }
+            else {
+                stagedFiles.append(f);
+                stagedFiles.append("\n");
+            }
+        }
+        System.out.println("=== Staged Files ===");
+        System.out.println(stagedFiles);
+        System.out.println("=== Removed Files ===");
+        System.out.println(filesStagedForRemoval);
+    }
+
+    /** Loop over blobMap of current commit and blobMap of STAGE to print out names of files
+     *  that satisfy any one of the following criteria:
+     *      1) file version in CurCommit different from file version in CWD, file not staged
+     *      2) file version in STAGE different from file version in CWD
+     *      3) exists in STAGE but deleted from CWD
+     *      4) tracked in current commit but deleted from CWD; file not staged for removal */
+    static void displayModificationsNotStagedForCommit(List<String> filesInCWD, List<String> filesInStage,
+                                                       Map<String, String> curCommitBlobMap) {
+        System.out.println("=== Modifications Not Staged For Commit ===");
+        // serialize and hash files in CWD for ease of comparison of contents
+        // CWDBlobMap = new HashMap<String, String>
+        // STAGEBlobMap = new HashMap<String, String>
+        // out = new LinkedList<>()
+        // loop over STAGEBlobMap
+        // if fileName !in CWDBlobMap.keySet()
+        // print fileName (3)
+        // elif blob hash in STAGE != blob hash in CWD
+        // print fileName (2)
+        // remove from curCommitBlobMap
+        // loop over curCommitBlobMap <-O(N)
+        // if fileName !in CWD
+        // if keyString + fileName !in STAGE -> print fileName (4)
+        // elif blob hash in curCommit != blob hash in CWD
+        // if fileName !in STAGE(??) -> print fileName (1)
+
+        // Create blobMap for CWD and STAGE
+        Map<String, String> CWDBlobMap = new HashMap<>();
+        for (String f : filesInCWD) {
+            String blobHash = sha1(readContents(new File(f)));
+            CWDBlobMap.put(f, blobHash);
+        }
+        Map<String, String> STAGEBlobMap = new HashMap<>();
+        for (String sf : filesInStage) {
+            String sBlobHash = sha1(readContents(join(STAGE, sf)));
+            STAGEBlobMap.put(sf, sBlobHash);
+        }
+        // Create set to store unique file names that satisfy any criteria
+        Set<String> out = new HashSet<>();
+
+        for (Map.Entry<String, String> blobPair : STAGEBlobMap.entrySet()) {
+            String file = blobPair.getKey();
+            if (file.substring(0, keyStringLen).equals(keyString)) {
+                continue; }
+            String blobHash = blobPair.getValue();
+            if (!CWDBlobMap.containsKey(file) || !blobHash.equals(CWDBlobMap.get(file))) {
+                out.add(file);
+            }
+        }
+
+        for (Map.Entry<String, String> blobPair : curCommitBlobMap.entrySet()) {
+            String file = blobPair.getKey();
+            String blobHash = blobPair.getValue();
+            if (!CWDBlobMap.containsKey(file) && !STAGEBlobMap.containsKey(keyString.concat(file))) {
+                out.add(file);
+            }
+            if (CWDBlobMap.get(file) != null && !blobHash.equals(CWDBlobMap.get(file))
+                     && !STAGEBlobMap.containsKey(file)) {
+                out.add(file);
+            }
+        }
+
+        // Sort and print output list
+        List<String> output = new LinkedList<>(out);
+        Collections.sort(output);
+        for (String i : output) { System.out.println(i); }
+        System.out.println();
+    }
+
+    /** Print out all files in CWD that are neither staged for addition nor
+     *  tracked in current commit, in lexicographical order. Also include files staged
+     *  for removal but then re-created without Gitlet's knowledge. */
+    static void displayUntrackedFiles(List<String> filesInCWD, List<String> filesInStage,
+                                      Map<String, String> curCommitBlobMap) {
+        System.out.println("=== Untracked Files ===");
+        for (String f : filesInCWD) {
+            if (!curCommitBlobMap.containsKey(f) && !filesInStage.contains(f)) {
+                System.out.println(f);
+            }
+        }
+        System.out.println();
+    }
+
     /** Traverse up the commit tree (from current head to initial commit) recursively.
      *  Print out the commit id, time and commit message for each commit traversed. */
     private static void logHelper(String curCommitHash) {
@@ -195,9 +356,14 @@ public class Repository {
      * Cache the (hash, commit) pair if it has not been done so. */
     static Commit getCommitFromHash(String hash) {
         if (!Commit.commitCache.containsKey(hash)) {
-            Commit targetCommit = readObject(join(Commit.COMMITS, hash), Commit.class);
-            Commit.commitCache.put(hash, targetCommit); // hashmap -> O(1) for insertion, access
-            return targetCommit;
+            try {
+                Commit targetCommit = readObject(join(Commit.COMMITS, hash), Commit.class);
+                Commit.commitCache.put(hash, targetCommit);
+                return targetCommit;
+            }
+            catch (IllegalArgumentException iae) {
+                throw Utils.error("No commit with that id exists.");
+            }
         }
         return Commit.commitCache.get(hash);
     }

@@ -13,19 +13,16 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) {
-        // TODO: what if args is empty?
         if (args.length == 0) {
             throw Utils.error("Must have at least one argument");
         }
         String firstArg = args[0];
         switch (firstArg) {
             case "init" -> {
-                // TODO: handle the `init` command
                 validateNumArgs("init", args, 1);
                 Repository.initRepo();
             }
             case "add" -> {
-                // TODO: handle the `add [filename]` command
                 validateNumArgs("add", args, 2);
                 Repository.add(args[1]);
             }
@@ -48,6 +45,30 @@ public class Main {
             case "find" -> {
                 validateNumArgs("find", args, 2);
                 Repository.find(args[1]);
+            }
+            case "status" -> {
+                validateNumArgs("status", args, 1);
+                Repository.status();
+            }
+
+            case "checkout" -> {
+                if (args.length == 1 || args.length > 4) {
+                    throw Utils.error("Invalid number of arguments for: %s.", args[0]);
+                }
+                else if (args.length == 2) {
+                    Repository.checkoutBranch(args[1]);
+                }
+                else if (args[1].equals("--")) {
+                    validateNumArgs("checkout", args, 3);
+                    Repository.checkout(args[2]);
+                }
+                else if (args[2].equals("--")) {
+                    validateNumArgs("checkout", args, 4);
+                    Repository.checkout(args[1], args[3]);
+                }
+                else {
+                    throw Utils.error("Incorrect arguments for: %s.", args[0]);
+                }
             }
         }
     }
