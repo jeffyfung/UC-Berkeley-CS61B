@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -33,7 +34,7 @@ public class Repository {
     /** Map from branch name to commit head hash */
     static Map<String, String> headMap = new StringTreeMap();
     /** Name of current branch */
-    static String currentBranch = "master"; // retrieve from serializable?
+    static String currentBranch;
     /** label for files that are staged to be removed */
     static String keyString = "[[del[[";
     static int keyStringLen = keyString.length();
@@ -158,7 +159,7 @@ public class Repository {
      *  modifications not staged for commit and untracked files. Mark the current
      *  branch with an asterisk. Entries listed in lexicographical order, not
      *  counting asterisk. */
-    // confirm compatibility with branching
+    // confirm compatibility with reset and merge
     static void status() {
         List<String> filesInCWD = plainFilenamesIn(CWD);
         List<String> filesInStage = plainFilenamesIn(STAGE);
@@ -201,55 +202,41 @@ public class Repository {
      *  if necessary. Any file not tracked by the head commit of given branch
      *  will be deleted from CWD. Clear the staging area unless the given branch
      *  is the current branch. Set this as the current branch. */
-    // confirm after introduce branching, what about failure cases?
     static void checkoutBranch(String branchName){
-        String headHash = getHeadHash(branchName);
-        if (headHash == null) {
+        String targetHeadHash = getHeadHash(branchName);
+        if (targetHeadHash == null) {
             System.out.println("No such branch exists.");
             return;
         }
-        Map<String, String> HeadBlobMap = getCommitFromHash(headHash).getBlobMap();
+
+        Map<String, String> curHeadBlobMap = getCommitFromHash(getHeadHash()).getBlobMap();
+        System.out.println(currentBranch); // <-- print what?
         for (String f : plainFilenamesIn(CWD)) {
-            if (!HeadBlobMap.containsKey(f)) {
+            if (!curHeadBlobMap.containsKey(f)) {
                 System.out.println("There is an untracked file in the way; delete it, " +
                         "or add and commit it first.");
                 return;
             }
         }
-
+        // Delete all files in CWD
         for (String f : plainFilenamesIn(CWD)) {
             restrictedDelete(f);
         }
-        for (Map.Entry<String, String> blobPair : HeadBlobMap.entrySet()) {
+        // Copy files from branch head to CWD
+        for (Map.Entry<String, String> blobPair : getCommitFromHash(targetHeadHash).getBlobMap().entrySet()) {
             writeContents(new File(blobPair.getKey()),
                     readContentsAsString(join(BLOBS, blobPair.getValue())));
         }
+        // Clear stage if target branch is not current branch
         if (branchName.equals(currentBranch)) {
             System.out.println("No need to checkout the current branch");
         }
         else {
-            for (String f : plainFilenamesIn(STAGE)) {
-                File tmp_file = join(STAGE, f);
-                tmp_file.delete();
-            }
+            clearStage();
         }
+        // Set target branch to current branch
         currentBranch = branchName;
-    }
-
-    /** Loop over headMap and print all branch names in lexicographical order. Add an asterisk in front
-     *  of the name of current branch. */
-    static void displayBranchInfo() {
-        System.out.println("=== Branches ===");
-        if (headMap.isEmpty()) {
-            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
-        }
-        for (Map.Entry<String, String> branchPair : headMap.entrySet()) {
-            if (branchPair.getKey().equals(currentBranch)) {
-                System.out.println("*".concat(branchPair.getKey()));
-            }
-            else { System.out.println(branchPair.getKey()); }
-        }
-        System.out.println();
+        writeContents(join(GITLET_DIR, "currentBranch"), currentBranch);
     }
 
     /** Loop over all files in STAGE to print out a list of files staged for addition and a list of
@@ -272,6 +259,38 @@ public class Repository {
         System.out.println(stagedFiles);
         System.out.println("=== Removed Files ===");
         System.out.println(filesStagedForRemoval);
+    }
+
+    /** Create a new branch and point its head to current commit (via commit hash).
+     *  Do not switch to the new branch. */
+    static void branch(String branchName) {
+        if (headMap.isEmpty()) {
+            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
+        }
+        if (headMap.containsKey(branchName)) {
+            System.out.println("A branch with that name already exists.");
+            return;
+        }
+        String headHash = getHeadHash();
+        headMap.put(branchName, headHash);
+        writeObject(join(GITLET_DIR, "headMap"), (Serializable) headMap);
+    }
+
+    /** Loop over headMap and print all branch names in lexicographical order. Add an asterisk in front
+     *  of the name of current branch. */
+    static void displayBranchInfo() {
+        System.out.println("=== Branches ===");
+        if (headMap.isEmpty()) {
+            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
+        }
+        currentBranch = readContentsAsString(join(GITLET_DIR, "currentBranch"));
+        for (Map.Entry<String, String> branchPair : headMap.entrySet()) {
+            if (branchPair.getKey().equals(currentBranch)) {
+                System.out.println("*".concat(branchPair.getKey()));
+            }
+            else { System.out.println(branchPair.getKey()); }
+        }
+        System.out.println();
     }
 
     /** Loop over blobMap of current commit and blobMap of STAGE to print out names of files
@@ -401,6 +420,8 @@ public class Repository {
         if (headMap.isEmpty()) {
             headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
         }
+        currentBranch = readContentsAsString(join(GITLET_DIR, "currentBranch"));
+        System.out.println("inside func: ".concat(currentBranch));
         return headMap.get(currentBranch);
     }
 

@@ -50,11 +50,12 @@ public class Commit implements Serializable {
     /** Create a commit object with commitDate = 00:00:00 UTC, Thursday, 1 January 1970,
      * commitMsg = "initial commit" and no parent. */
     static void makeInitCommit(){
-//        Date initDate = Date.from(Instant.parse("1970-01-01T00:00:00Z"));
         Date initDate = new Date(0);
         Commit initCommit = new Commit("initial commit", initDate,
                 null, new Repository.StringTreeMap());
         commitHelper(initCommit);
+        Repository.currentBranch = "master";
+        writeContents(join(Repository.GITLET_DIR, "currentBranch"), Repository.currentBranch);
     }
 
     // update to accommodate rm command (staged for removal)
@@ -102,6 +103,9 @@ public class Commit implements Serializable {
         File cf = join(COMMITS, commitHash);
         writeContents(cf, commitByte);
 
+        if (Repository.currentBranch == null) {
+            Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR, "currentBranch"));
+        }
         Repository.headMap.put(Repository.currentBranch, commitHash);
         writeObject(join(Repository.GITLET_DIR, "headMap"), (Serializable) Repository.headMap);
         commitCache.put(commitHash, c);

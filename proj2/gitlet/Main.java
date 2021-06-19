@@ -54,7 +54,6 @@ public class Main {
                 validateNumArgs("status", args, 1);
                 Repository.status();
             }
-
             case "checkout" -> {
                 if (args.length == 1 || args.length > 4) {
                     throw Utils.error("Invalid number of arguments for: %s.", args[0]);
@@ -73,6 +72,10 @@ public class Main {
                 else {
                     throw Utils.error("Incorrect arguments for: %s.", args[0]);
                 }
+            }
+            case "branch" -> {
+                validateNumArgs("branch", args, 2);
+                Repository.branch(args[1]);
             }
         }
     }
