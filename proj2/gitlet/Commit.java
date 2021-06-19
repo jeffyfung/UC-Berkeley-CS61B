@@ -50,7 +50,8 @@ public class Commit implements Serializable {
     /** Create a commit object with commitDate = 00:00:00 UTC, Thursday, 1 January 1970,
      * commitMsg = "initial commit" and no parent. */
     static void makeInitCommit(){
-        Date initDate = Date.from(Instant.parse("1970-01-01T00:00:00Z"));
+//        Date initDate = Date.from(Instant.parse("1970-01-01T00:00:00Z"));
+        Date initDate = new Date(0);
         Commit initCommit = new Commit("initial commit", initDate,
                 null, new Repository.StringTreeMap());
         commitHelper(initCommit);

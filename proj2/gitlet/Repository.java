@@ -3,6 +3,8 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static java.nio.file.StandardCopyOption.*;
@@ -370,8 +372,8 @@ public class Repository {
     private static void displayCommitInfo(String hash, Commit commit){
         System.out.println("===");
         System.out.println("commit ".concat(hash));
-        // insert merge numerals for merge commits -> "Merge: "
-        System.out.println("Date: ".concat(commit.getCommitDate().toString()));
+        DateFormat dateFormat = new SimpleDateFormat("E MMM dd HH:mm:ss yyyy Z");
+        System.out.println("Date: ".concat(dateFormat.format(commit.getCommitDate())));
         System.out.println(commit.getCommitMsg().concat("\n"));
     }
 
