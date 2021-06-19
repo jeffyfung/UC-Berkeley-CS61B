@@ -210,7 +210,6 @@ public class Repository {
         }
 
         Map<String, String> curHeadBlobMap = getCommitFromHash(getHeadHash()).getBlobMap();
-        System.out.println(currentBranch); // <-- print what?
         for (String f : plainFilenamesIn(CWD)) {
             if (!curHeadBlobMap.containsKey(f)) {
                 System.out.println("There is an untracked file in the way; delete it, " +
@@ -239,6 +238,41 @@ public class Repository {
         writeContents(join(GITLET_DIR, "currentBranch"), currentBranch);
     }
 
+    /** Create a new branch and point its head to current commit (via commit hash).
+     *  Do not switch to the new branch. */
+    static void branch(String branchName) {
+        if (headMap.isEmpty()) {
+            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
+        }
+        if (headMap.containsKey(branchName)) {
+            System.out.println("A branch with that name already exists.");
+            return;
+        }
+        String headHash = getHeadHash();
+        headMap.put(branchName, headHash);
+        writeObject(join(GITLET_DIR, "headMap"), (Serializable) headMap);
+    }
+
+    /** Delete the branch with the given name. Retain all commits and files associated. */
+    static void rm_branch(String branchName) {
+        currentBranch = readContentsAsString(join(GITLET_DIR, "currentBranch"));
+        if (currentBranch.equals(branchName)) {
+            System.out.println("Cannot remove the current branch.");
+            return;
+        }
+
+        if (headMap.isEmpty()) {
+            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
+        }
+        if (headMap.remove(branchName) == null) {
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+        else {
+            writeObject(join(GITLET_DIR, "headMap"), (Serializable) headMap);
+        }
+    }
+
     /** Loop over all files in STAGE to print out a list of files staged for addition and a list of
      *  files staged for removal. Listed in lexicographical order. */
     static void displayStagedFiles(List<String> filesInStage) {
@@ -259,21 +293,6 @@ public class Repository {
         System.out.println(stagedFiles);
         System.out.println("=== Removed Files ===");
         System.out.println(filesStagedForRemoval);
-    }
-
-    /** Create a new branch and point its head to current commit (via commit hash).
-     *  Do not switch to the new branch. */
-    static void branch(String branchName) {
-        if (headMap.isEmpty()) {
-            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
-        }
-        if (headMap.containsKey(branchName)) {
-            System.out.println("A branch with that name already exists.");
-            return;
-        }
-        String headHash = getHeadHash();
-        headMap.put(branchName, headHash);
-        writeObject(join(GITLET_DIR, "headMap"), (Serializable) headMap);
     }
 
     /** Loop over headMap and print all branch names in lexicographical order. Add an asterisk in front
@@ -421,7 +440,6 @@ public class Repository {
             headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
         }
         currentBranch = readContentsAsString(join(GITLET_DIR, "currentBranch"));
-        System.out.println("inside func: ".concat(currentBranch));
         return headMap.get(currentBranch);
     }
 

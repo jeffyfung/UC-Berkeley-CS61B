@@ -53,8 +53,8 @@ public class Commit implements Serializable {
         Date initDate = new Date(0);
         Commit initCommit = new Commit("initial commit", initDate,
                 null, new Repository.StringTreeMap());
-        commitHelper(initCommit);
         Repository.currentBranch = "master";
+        commitHelper(initCommit);
         writeContents(join(Repository.GITLET_DIR, "currentBranch"), Repository.currentBranch);
     }
 
