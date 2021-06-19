@@ -42,14 +42,15 @@ public class Repository {
      * Make an initial commit by calling makeInitCommit.
      * Print error if .gitlet already exists. */
     static void initRepo() {
+        if (plainFilenamesIn(GITLET_DIR) != null) {
+            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            return;
+        }
         setupPersistence();
         Commit.makeInitCommit();
     }
 
     private static void setupPersistence(){
-        if (plainFilenamesIn(GITLET_DIR) != null) {
-            throw Utils.error("A Gitlet version-control system already exists in the current directory.");
-        }
         GITLET_DIR.mkdir();
         STAGE.mkdir();
         BLOBS.mkdir();
@@ -62,7 +63,8 @@ public class Repository {
      */
     static void add(String fileName){
         if (!plainFilenamesIn(CWD).contains(fileName)) {
-            throw Utils.error("File does not exist.");
+            System.out.println("File does not exist.");
+            return;
         }
         String fileHash = sha1(readContents(join(CWD, fileName)));
         String targetBlobHash = getCommitFromHash(getHeadHash()).getBlobMap().get(fileName); // O(log N)
@@ -87,6 +89,10 @@ public class Repository {
      *  The new commit's blobMap is identical to its parent except for files in STAGE.
      *  Clear all files in STAGE afterwards */
     static void commit(String commitMsg){
+        if (plainFilenamesIn(Repository.STAGE).size() == 0) {
+            System.out.println("No changes added to the commit.");
+            return;
+        }
         Commit.makeCommit(commitMsg);
         clearStage();
     }
@@ -108,7 +114,7 @@ public class Repository {
             restrictedDelete(fileName);
         }
         else {
-            throw Utils.error("No reason to remove the file.");
+            System.out.println("No reason to remove the file.");
         }
     }
 
@@ -142,7 +148,7 @@ public class Repository {
             }
         }
         if (!msgOutputted){
-            throw Utils.error("Found no commit with that message.");
+            System.out.println("Found no commit with that message.");
         }
     }
 
@@ -164,11 +170,10 @@ public class Repository {
     /** Copy the file as it exists in the head commit to CWD. Overwrite if necessary.
      *  No need to stage the file. */
     static void checkout(String fileName) {
-        // read from file from head commit
-        // write to file of same name in CWD
         String blobHash = getCommitFromHash(getHeadHash()).getBlobMap().get(fileName);
         if (blobHash == null) {
-            throw Utils.error("File does not exist in that commit.");
+            System.out.println("File does not exist in that commit.");
+            return;
         }
         String fileContent = readContentsAsString(join(BLOBS, blobHash));
         writeContents(new File(fileName), fileContent);
@@ -177,9 +182,14 @@ public class Repository {
     /** Copy the file as it exists in the commit specified by the hash to CWD. Overwrite
      *  if necessary. No need to stage the file. */
     static void checkout(String commitHash, String fileName) {
-        String blobHash = getCommitFromHash(commitHash).getBlobMap().get(fileName);
+        Commit commitFromHash = getCommitFromHash(commitHash);
+        if (commitFromHash == null) {
+            return;
+        }
+        String blobHash = commitFromHash.getBlobMap().get(fileName);
         if (blobHash == null) {
-            throw Utils.error("File does not exist in that commit.");
+            System.out.println("File does not exist in that commit.");
+            return;
         }
         String fileContent = readContentsAsString(join(BLOBS, blobHash));
         writeContents(new File(fileName), fileContent);
@@ -189,8 +199,39 @@ public class Repository {
      *  if necessary. Any file not tracked by the head commit of given branch
      *  will be deleted from CWD. Clear the staging area unless the given branch
      *  is the current branch. Set this as the current branch. */
+    // confirm after introduce branching, what about failure cases?
     static void checkoutBranch(String branchName){
-        System.out.println("feature: checking out branch - to be updated");
+        String headHash = getHeadHash(branchName);
+        if (headHash == null) {
+            System.out.println("No such branch exists.");
+            return;
+        }
+        Map<String, String> HeadBlobMap = getCommitFromHash(headHash).getBlobMap();
+        for (String f : plainFilenamesIn(CWD)) {
+            if (!HeadBlobMap.containsKey(f)) {
+                System.out.println("There is an untracked file in the way; delete it, " +
+                        "or add and commit it first.");
+                return;
+            }
+        }
+
+        for (String f : plainFilenamesIn(CWD)) {
+            restrictedDelete(f);
+        }
+        for (Map.Entry<String, String> blobPair : HeadBlobMap.entrySet()) {
+            writeContents(new File(blobPair.getKey()),
+                    readContentsAsString(join(BLOBS, blobPair.getValue())));
+        }
+        if (branchName.equals(currentBranch)) {
+            System.out.println("No need to checkout the current branch");
+        }
+        else {
+            for (String f : plainFilenamesIn(STAGE)) {
+                File tmp_file = join(STAGE, f);
+                tmp_file.delete();
+            }
+        }
+        currentBranch = branchName;
     }
 
     /** Loop over headMap and print all branch names in lexicographical order. Add an asterisk in front
@@ -343,6 +384,15 @@ public class Repository {
         }
     }
 
+    /** Get hash string of input branch. Check if headMap is empty.
+     *  If empty, deserialize headMap file. */
+    static String getHeadHash(String branchName) {
+        if (headMap.isEmpty()) {
+            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
+        }
+        return headMap.get(branchName);
+    }
+
     /** Get hash string of current branch head. Check if headMap is empty.
      *  If empty, deserialize headMap file. */
     static String getHeadHash() {
@@ -362,7 +412,7 @@ public class Repository {
                 return targetCommit;
             }
             catch (IllegalArgumentException iae) {
-                throw Utils.error("No commit with that id exists.");
+                System.out.println("No commit with that id exists.");
             }
         }
         return Commit.commitCache.get(hash);

@@ -64,9 +64,6 @@ public class Commit implements Serializable {
      *  */
     public static void makeCommit(String commitMsg) {
         List<String> filesInStage = plainFilenamesIn(Repository.STAGE);
-        if (filesInStage.size() == 0) {
-            throw Utils.error("No changes added to the commit.");
-        }
         Date curDate = new Date();
         String parentCommitHash = Repository.getHeadHash();
         Commit parentCommit = Repository.getCommitFromHash(parentCommitHash);

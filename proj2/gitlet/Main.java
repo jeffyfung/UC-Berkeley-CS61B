@@ -27,6 +27,10 @@ public class Main {
                 Repository.add(args[1]);
             }
             case "commit" -> {
+                if (args.length == 1) {
+                    System.out.println("Please enter a commit message.");
+                    return;
+                }
                 validateNumArgs("commit", args, 2);
                 Repository.commit(args[1]);
             }
@@ -75,9 +79,6 @@ public class Main {
 
     public static void validateNumArgs(String cmd, String[] args, int n) {
         if (args.length != n) {
-            if (cmd.equals("commit") && args.length == 1) {
-                throw Utils.error("Please enter a commit message.");
-            }
             throw new RuntimeException(
                     String.format("Invalid number of arguments for: %s.", cmd));
         }
