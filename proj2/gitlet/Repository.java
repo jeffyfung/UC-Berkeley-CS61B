@@ -185,11 +185,7 @@ public class Repository {
     /** Copy the file as it exists in the commit specified by the hash to CWD. Overwrite
      *  if necessary. No need to stage the file. */
     static void checkout(String commitHash, String fileName) {
-        Commit commitFromHash = getCommitFromHash(commitHash);
-        if (commitFromHash == null) {
-            return;
-        }
-        String blobHash = commitFromHash.getBlobMap().get(fileName);
+        String blobHash = getCommitFromHash(commitHash).getBlobMap().get(fileName);
         if (blobHash == null) {
             System.out.println("File does not exist in that commit.");
             return;
@@ -204,11 +200,6 @@ public class Repository {
      *  is the current branch. Set this as the current branch. */
     static void checkoutBranch(String branchName){
         String targetHeadHash = getHeadHash(branchName);
-        if (targetHeadHash == null) {
-            System.out.println("No such branch exists.");
-            return;
-        }
-
         Map<String, String> curHeadBlobMap = getCommitFromHash(getHeadHash()).getBlobMap();
         for (String f : plainFilenamesIn(CWD)) {
             if (!curHeadBlobMap.containsKey(f)) {
@@ -271,6 +262,36 @@ public class Repository {
         else {
             writeObject(join(GITLET_DIR, "headMap"), (Serializable) headMap);
         }
+    }
+
+    /** Check out all files tracked by the given commit. Removes tracked files that are not
+     *  present in that commit. Move current branch's head to that commit. Clear the stage.
+     */
+    static void reset(String commitHash) {
+        // warns if there is an untracked file in CWD
+        Map<String, String> curHeadBlobMap = getCommitFromHash(getHeadHash()).getBlobMap();
+        for (String f : plainFilenamesIn(CWD)) {
+            if (!curHeadBlobMap.containsKey(f)) {
+                System.out.println("There is an untracked file in the way; delete it, " +
+                        "or add and commit it first.");
+                System.exit(0);
+            }
+        }
+        // delete all files in CWD
+        for (String f : plainFilenamesIn(CWD)) {
+            restrictedDelete(f);
+        }
+        // checkout all files tracked by given commit
+        Map<String, String> targetBlobMap = getCommitFromHash(commitHash).getBlobMap();
+        for (Map.Entry<String, String> blobPair : targetBlobMap.entrySet()) {
+            String fileContent = readContentsAsString(join(BLOBS, blobPair.getValue()));
+            writeContents(new File(blobPair.getKey()), fileContent);
+        }
+        // reset current branch's head
+        headMap.put(currentBranch, commitHash);
+        writeObject(join(GITLET_DIR, "headMap"), (Serializable) headMap);
+        // clear staging area
+        clearStage();
     }
 
     /** Loop over all files in STAGE to print out a list of files staged for addition and a list of
@@ -430,7 +451,12 @@ public class Repository {
         if (headMap.isEmpty()) {
             headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
         }
-        return headMap.get(branchName);
+        String out = headMap.get(branchName);
+        if (out == null) {
+            System.out.println("No such branch exists.");
+            System.exit(0);
+        }
+        return out;
     }
 
     /** Get hash string of current branch head. Check if headMap is empty.
@@ -454,6 +480,7 @@ public class Repository {
             }
             catch (IllegalArgumentException iae) {
                 System.out.println("No commit with that id exists.");
+                System.exit(0);
             }
         }
         return Commit.commitCache.get(hash);

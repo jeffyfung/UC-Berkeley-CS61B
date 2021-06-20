@@ -81,6 +81,10 @@ public class Main {
                 validateNumArgs("rm-branch", args, 2);
                 Repository.rm_branch(args[1]);
             }
+            case "reset" -> {
+                validateNumArgs("reset", args, 2);
+                Repository.reset(args[1]);
+            }
         }
     }
 
