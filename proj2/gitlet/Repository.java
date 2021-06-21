@@ -159,13 +159,14 @@ public class Repository {
      *  modifications not staged for commit and untracked files. Mark the current
      *  branch with an asterisk. Entries listed in lexicographical order, not
      *  counting asterisk. */
-    // confirm compatibility with reset and merge
+    // confirm compatibility with merge
     static void status() {
         List<String> filesInCWD = plainFilenamesIn(CWD);
         List<String> filesInStage = plainFilenamesIn(STAGE);
         Map<String, String> curCommitBlobMap = getCommitFromHash(getHeadHash()).getBlobMap();
         displayBranchInfo();
         displayStagedFiles(filesInStage);
+        System.out.println("test: 0");
         displayModificationsNotStagedForCommit(filesInCWD, filesInStage, curCommitBlobMap);
         displayUntrackedFiles(filesInCWD, filesInStage, curCommitBlobMap);
     }
@@ -342,6 +343,7 @@ public class Repository {
     static void displayModificationsNotStagedForCommit(List<String> filesInCWD, List<String> filesInStage,
                                                        Map<String, String> curCommitBlobMap) {
         System.out.println("=== Modifications Not Staged For Commit ===");
+        System.out.println("first test");
         // serialize and hash files in CWD for ease of comparison of contents
         // CWDBlobMap = new HashMap<String, String>
         // STAGEBlobMap = new HashMap<String, String>
@@ -377,8 +379,11 @@ public class Repository {
             if (file.substring(0, keyStringLen).equals(keyString)) {
                 continue; }
             String blobHash = blobPair.getValue();
-            if (!CWDBlobMap.containsKey(file) || !blobHash.equals(CWDBlobMap.get(file))) {
-                out.add(file);
+            if (!CWDBlobMap.containsKey(file)) {
+                out.add(file + " (deleted)");
+            }
+            else if (!blobHash.equals(CWDBlobMap.get(file))) {
+                out.add(file + " (modified)");
             }
         }
 
@@ -386,14 +391,15 @@ public class Repository {
             String file = blobPair.getKey();
             String blobHash = blobPair.getValue();
             if (!CWDBlobMap.containsKey(file) && !STAGEBlobMap.containsKey(keyString.concat(file))) {
-                out.add(file);
+                out.add(file + " (deleted)");
             }
-            if (CWDBlobMap.get(file) != null && !blobHash.equals(CWDBlobMap.get(file))
+            if (CWDBlobMap.containsKey(file) && !blobHash.equals(CWDBlobMap.get(file))
                      && !STAGEBlobMap.containsKey(file)) {
-                out.add(file);
+                out.add(file + " (modified)");
             }
         }
 
+        System.out.println("Testing");
         // Sort and print output list
         List<String> output = new LinkedList<>(out);
         Collections.sort(output);

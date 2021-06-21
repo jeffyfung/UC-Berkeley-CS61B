@@ -51,6 +51,7 @@ public class Main {
                 Repository.find(args[1]);
             }
             case "status" -> {
+                System.out.println("file is updated");
                 validateNumArgs("status", args, 1);
                 Repository.status();
             }
