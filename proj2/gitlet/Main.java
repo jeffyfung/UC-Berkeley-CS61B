@@ -51,7 +51,6 @@ public class Main {
                 Repository.find(args[1]);
             }
             case "status" -> {
-                System.out.println("file is updated");
                 validateNumArgs("status", args, 1);
                 Repository.status();
             }
@@ -85,6 +84,10 @@ public class Main {
             case "reset" -> {
                 validateNumArgs("reset", args, 2);
                 Repository.reset(args[1]);
+            }
+            case "merge" -> {
+                validateNumArgs("merge", args, 2);
+                Repository.merge(args[1]);
             }
         }
     }

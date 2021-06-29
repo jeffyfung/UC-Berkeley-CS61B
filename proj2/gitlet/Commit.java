@@ -39,6 +39,7 @@ public class Commit implements Serializable {
     private transient Commit parentCommit;
     /** Second parent commit object. Not serialized. */
     private transient Commit secondParentCommit;
+    // TODO : make use of cached parentCommit / secondParentCommit for quicker retrieval in log and makeCommit
 
     public Commit(String commitMsg, Date commitDate, String parentCommitHash, Map<String, String> blobMap) {
         this.commitMsg = commitMsg;
@@ -58,14 +59,28 @@ public class Commit implements Serializable {
         writeContents(join(Repository.GITLET_DIR, "currentBranch"), Repository.currentBranch);
     }
 
-    // update to accommodate rm command (staged for removal)
     /** Create a new commit. Its parent commit is the HEAD of current branch and is represented by hash.
      *  Record the time of commit. Its blobMap is identical to the parent except for files in STAGE.
      *  If parent commit does not contain a blobMap (i.e. init commit), the new blobMap contains
      *  only reference to files in STAGE in the format of (file name -> blob hash of serialized file content)
      *  */
     public static void makeCommit(String commitMsg) {
+        commitHelper(handleCommit(commitMsg));
+    }
+
+    /** Make merge commit. */
+    static void makeMergeCommit(String commitMsg, String secondParentCommitHash) {
+        Commit c = handleCommit(commitMsg);
+        c.secondParentCommitHash = secondParentCommitHash;
+        commitHelper(c);
+    }
+
+    private static Commit handleCommit(String commitMsg) {
         List<String> filesInStage = plainFilenamesIn(Repository.STAGE);
+        if (filesInStage.size() == 0) {
+            System.out.println("No changes added to the commit.");
+            System.exit(0);
+        }
         Date curDate = new Date();
         String parentCommitHash = Repository.getHeadHash();
         Commit parentCommit = Repository.getCommitFromHash(parentCommitHash);
@@ -76,9 +91,9 @@ public class Commit implements Serializable {
         }
         for (String f : filesInStage) {
             // check stage for removal by checking if fileName starts with "-del-"
-                // if so remove corresponding key from commitBlobMap
+            // if so remove corresponding key from commitBlobMap
             // if fileName does not exist in current commit (i.e. commitBlobMap)
-                // -> address exception in Repository.remove
+            // -> address exception in Repository.remove
             if (f.length() > Repository.keyStringLen
                     && f.substring(0, Repository.keyStringLen).equals(Repository.keyString)) {
                 commitBlobMap.remove(f.substring(Repository.keyStringLen));
@@ -91,7 +106,7 @@ public class Commit implements Serializable {
         }
         Commit curCommit = new Commit(commitMsg, curDate, parentCommitHash, commitBlobMap);
         curCommit.parentCommit = parentCommit;
-        commitHelper(curCommit);
+        return curCommit;
     }
 
     /** Private helper method to dump commit object into newly created file
@@ -120,4 +135,5 @@ public class Commit implements Serializable {
     public String getCommitMsg() { return this.commitMsg; }
 
     public String getParentCommitHash() { return this.parentCommitHash; }
+
 }

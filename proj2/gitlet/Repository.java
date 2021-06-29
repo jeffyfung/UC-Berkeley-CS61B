@@ -12,6 +12,8 @@ import static java.nio.file.StandardCopyOption.*;
 
 import static gitlet.Utils.*;
 
+// TODO : debug merge + confirm other commands' compatibility with merge + write more integration test on merge.
+
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
@@ -45,16 +47,15 @@ public class Repository {
      * Make an initial commit by calling makeInitCommit.
      * Print error if .gitlet already exists. */
     static void initRepo() {
-        if (plainFilenamesIn(GITLET_DIR) != null) {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
-            return;
-        }
         setupPersistence();
         Commit.makeInitCommit();
     }
 
     private static void setupPersistence(){
-        GITLET_DIR.mkdir();
+        if (!GITLET_DIR.mkdir()) {
+            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            System.exit(0);
+        }
         STAGE.mkdir();
         BLOBS.mkdir();
         Commit.COMMITS.mkdir();
@@ -92,10 +93,6 @@ public class Repository {
      *  The new commit's blobMap is identical to its parent except for files in STAGE.
      *  Clear all files in STAGE afterwards */
     static void commit(String commitMsg){
-        if (plainFilenamesIn(Repository.STAGE).size() == 0) {
-            System.out.println("No changes added to the commit.");
-            return;
-        }
         Commit.makeCommit(commitMsg);
         clearStage();
     }
@@ -166,7 +163,6 @@ public class Repository {
         Map<String, String> curCommitBlobMap = getCommitFromHash(getHeadHash()).getBlobMap();
         displayBranchInfo();
         displayStagedFiles(filesInStage);
-        System.out.println("test: 0");
         displayModificationsNotStagedForCommit(filesInCWD, filesInStage, curCommitBlobMap);
         displayUntrackedFiles(filesInCWD, filesInStage, curCommitBlobMap);
     }
@@ -206,7 +202,7 @@ public class Repository {
             if (!curHeadBlobMap.containsKey(f)) {
                 System.out.println("There is an untracked file in the way; delete it, " +
                         "or add and commit it first.");
-                return;
+                System.exit(0);
             }
         }
         // Delete all files in CWD
@@ -295,6 +291,269 @@ public class Repository {
         clearStage();
     }
 
+    /** Merge given branch into current branch.
+     *
+     *  If given branch's head and current branch's head are on the same line of commit:
+     *      - if the given branch's head is an ancestor of that of current branch, fast
+     *        forward to given branch's head.
+     *      - if the current branch's head is an ancestor of that of given branch, do nothing.
+     *      - if the current branch's head and given branch's head are the same, do nothing.
+     *
+     *  In cases where the branches are split from a split point, conduct the following action
+     *  and then call commit (i.e. merge commit):
+     *
+     *      - if a file is changed in current branch but unmodified in given branch, do nothing.
+     *      - if a file is changed in given branch but unmodified in current branch, add it to
+     *        CWD and stage it.
+     *      - if a file is deleted from current branch but unmodified in given branch, do nothing.
+     *      - if a file is deleted from given branch but unmodified in current branch, remove it
+     *        from CWD and stage it for removal.
+     *      - if a file is modified / deleted / created in the same way in both branches, do
+     *        nothing.
+     *      - if a file is modified / deleted / created differently in different branches,
+     *        including the case where a file is deleted in a branch and modified in the other,
+     *        as well as the case where a file being newly created in both branches with
+     *        different contents, merge conflict is encountered and file content will be
+     *        updated as below:
+     *
+     *              <<<<<<< HEAD
+     *              contents of file in current branch
+     *              =======
+     *              contents of file in given branch
+     *              >>>>>>>
+     *
+     *        Then add the updated file to CWD and stage it.
+     *      - if a file is newly created in current branch but not give branch, do nothing.
+     *      - if a file is newly created in given branch but not current branch, add it to
+     *        CWD and stage it.
+     *
+     *  A merge commit has two parent commits with first parent being the current branch's head
+     *  and second parent being the given branch's head. Making commits with no staged files will
+     *  display commit error. Merge does not take place when there are files untracked by current
+     *  commit in CWD, or when there are staged (for addition or removal) files.
+     *
+     *  See notesOnMergeTest.md for further details */
+    static void merge(String branchName) {
+        // failure cases
+        String curHeadHash = getHeadHash();
+        Commit curHeadCommit = getCommitFromHash(curHeadHash);
+        Map<String, String> curHeadBlobMap = curHeadCommit.getBlobMap();
+        String branchHeadHash = getHeadHash(branchName);
+        Commit branchHeadCommit = getCommitFromHash(branchHeadHash);
+        // check there is an untracked file (by current commit) in CWD
+        for (String f : plainFilenamesIn(CWD)) {
+            if (!curHeadBlobMap.containsKey(f)) {
+                System.out.println("There is an untracked file in the way; delete it, " +
+                        "or add and commit it first.");
+                System.exit(0);
+            }
+        }
+        // check if there is any file in stage
+        for (String f : plainFilenamesIn(STAGE)) {
+            System.out.println("You have uncommitted changes.");
+            System.exit(0);
+        }
+        // check if branch exists and is not itself
+        if (!headMap.containsKey(branchName)) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+        }
+        if (branchName.equals(currentBranch)) {
+            System.out.println("Cannot merge a branch with itself.");
+            System.exit(0);
+        }
+
+        // get split point and check if the two heads are equal, or if one is an ancestor
+        // of another
+        String splitPointHash = getSplitPointOfBranches(curHeadHash, branchHeadHash, branchName);
+        Commit splitPoint = getCommitFromHash(splitPointHash);
+        Map<String, String> branchHeadBlobMap = branchHeadCommit.getBlobMap();
+
+        // get shallow copy of blobMaps
+        Map<String, String> splitPointBlobMap = splitPoint.getBlobMap(); // StringTreeMap iteration => O(D)
+        Map<String, String> tmpCurHeadBlobMap = new HashMap<>(curHeadBlobMap);
+        Map<String, String> tmpBranchHeadBlobMap = new HashMap<>(branchHeadBlobMap);
+        int conflict = 0;
+        for (Map.Entry<String, String> splitPointPair: splitPointBlobMap.entrySet()) {
+            // compare and pop item from tmpCurHeadHeadBlobMap
+            String fileName = splitPointPair.getKey();
+            VersionComparator cur = compareFile(splitPointPair, fileName, tmpCurHeadBlobMap);
+            VersionComparator branch = compareFile(splitPointPair, fileName, tmpBranchHeadBlobMap);
+//            System.out.println(fileName);
+//            System.out.println("cur: " + cur.num);
+//            System.out.println("branch: " + branch.num);
+            if (cur.num == 1 && branch.num == 0) {
+                // case 1a - no action
+            }
+            else if (cur.num == 0 && branch.num == 1) {
+                // case 1b
+                // change to version in the given branch (copy from BLOBS to CWD) and stage change
+                try {
+                    Files.copy(join(BLOBS, branch.blobHash).toPath(),
+                            join(CWD, fileName).toPath(), REPLACE_EXISTING);
+                    Files.copy(join(CWD, fileName).toPath(),
+                            join(STAGE, fileName).toPath(), REPLACE_EXISTING);
+                }
+                catch (IOException e) {
+                    throw Utils.error("IOException during file copy operation.");
+                }
+            }
+            else if (cur.num == 2 && branch.num == 0) {
+                // case 2a - no action
+            }
+            else if (cur.num == 0 && branch.num == 2) {
+                // case 2b
+                // remove file from CWD and stage for removal
+                File fileStagedForRemoval = join(STAGE, keyString.concat(fileName));
+                createFile(fileStagedForRemoval);
+                restrictedDelete(fileName);
+            }
+            else if ((cur.num == 1 && branch.num == 1) ||
+                     (cur.num == 1 && branch.num == 2) ||
+                     (cur.num == 2 && branch.num == 1)) {
+                // case 3a - no action
+                if (cur.blobHash == null || branch.blobHash == null
+                        || !cur.blobHash.equals(branch.blobHash)) {
+                    // case 3b - merge conflict
+                    String curBlobContent = (cur.blobHash == null) ?
+                            "" : readContentsAsString(join(BLOBS, cur.blobHash));
+                    String branchBlobContent = (branch.blobHash == null) ?
+                            "" : readContentsAsString(join(BLOBS, branch.blobHash));
+                    conflict = handleMergeConflict(fileName, curBlobContent, branchBlobContent);
+                }
+            }
+            else if (cur.num == 2 && branch.num == 2) {
+                // case 3a - no action
+            }
+        }
+    // file creation - case 3a-b and 4a-b
+    // loop over tmpCurHeadBlobMap and tmpBranchHeadBlobMap to find newly created files
+        for (Map.Entry<String, String> remainingFileInCurHead: tmpCurHeadBlobMap.entrySet()) {
+            String fileName = remainingFileInCurHead.getKey();
+            String blobHash = remainingFileInCurHead.getValue();
+            String branchBlobHash = tmpBranchHeadBlobMap.get(fileName);
+            if (branchBlobHash == null) { } // case 4a - no action
+            else {
+                // case 3a - no action
+                if (!blobHash.equals(branchBlobHash)) {
+                    // case 3b - merge conflict
+                    conflict = handleMergeConflict(fileName, readContentsAsString(join(BLOBS, blobHash)),
+                                            readContentsAsString(join(BLOBS, branchBlobHash)));
+                }
+                tmpBranchHeadBlobMap.remove(fileName);
+            }
+        }
+        for (Map.Entry<String, String> remainingFileInBranchHead: tmpBranchHeadBlobMap.entrySet()) {
+            // case 4b
+            // change to version in the given branch (copy from BLOBS to CWD) and stage change
+            String fileName = remainingFileInBranchHead.getKey();
+            try {
+                Files.copy(join(BLOBS, remainingFileInBranchHead.getValue()).toPath(),
+                        join(CWD, fileName).toPath(), REPLACE_EXISTING);
+                Files.copy(join(CWD, fileName).toPath(),
+                        join(STAGE, fileName).toPath(), REPLACE_EXISTING);
+            }
+            catch (IOException e) {
+                throw Utils.error("IOException during file copy operation.");
+            }
+        }
+        // commit the file
+        if (conflict == 1) {
+            System.out.println("Encountered a merge conflict.");
+        }
+        // merge commit
+        Commit.makeMergeCommit(String.format("Merged %s into %s.", branchName, currentBranch),
+                branchHeadHash);
+        clearStage();
+    }
+
+    static String getSplitPointOfBranches(String curHeadHash, String branchHeadHash, String branchName) {
+        // exit immediately if the two branches share the same head commit
+        if (curHeadHash.equals(branchHeadHash)) {
+            System.exit(0);
+        }
+        // create a list of commits in current branch starting from current commit to init commit
+        List<String> currentLineOfCommit = new LinkedList<>();
+        String curCommitHash = curHeadHash;
+        while (curCommitHash != null) {
+            if (curCommitHash.equals(branchHeadHash)) {
+                System.out.println("Given branch is an ancestor of the current branch.");
+                System.exit(0);
+            }
+            currentLineOfCommit.add(curCommitHash);
+            curCommitHash = getCommitFromHash(curCommitHash).getParentCommitHash();
+        }
+        // reverse the list for quicker match
+        Collections.reverse(currentLineOfCommit);
+        // find match from given branch
+        String branchCommitHash = branchHeadHash;
+        while (branchCommitHash != null) {
+            if (branchCommitHash.equals(curHeadHash)) {
+                // fast-forward current branch
+                checkoutBranch(branchName);
+                System.out.println("Current branch fast-forwarded.");
+                System.exit(0);
+            }
+            if (currentLineOfCommit.contains(branchCommitHash)) {
+                return branchCommitHash;
+            }
+            branchCommitHash = getCommitFromHash(branchCommitHash).getParentCommitHash();
+        }
+        System.out.println("Somethings wrong!!"); //TODO: delete this line after testing
+        return null;
+    }
+
+    /** Compare file version of an entry in split point's blob map with the corresponding entry in
+     *  the given blob map.
+     *  Output: 0 if the file version on given blob map is the same as that of split point.
+     *          1 if the file version on given blob map different from that of split point.
+     *          2 if the file exists only in split point's blob map. */
+    private static VersionComparator compareFile(Map.Entry<String, String> splitPointPair, String fileName,
+                                                    Map<String, String> givenBlobMap) {
+        String blobHashInGiven = givenBlobMap.get(fileName);
+        int num;
+        if (blobHashInGiven == null) {
+            num = 2;
+            return new VersionComparator(num, null);
+        }
+        String blobHashInSplitPoint = splitPointPair.getValue();
+        num = (blobHashInSplitPoint.equals(blobHashInGiven)) ? 0 : 1;
+        givenBlobMap.remove(fileName);
+        return new VersionComparator(num, blobHashInGiven);
+    }
+
+    /** Helper class of merge command */
+    private static class VersionComparator{
+        int num;
+        String blobHash;
+
+        public VersionComparator(int num, String blobHash){
+            this.num = num;
+            this.blobHash = blobHash;
+        }
+    }
+
+    /** Handles merge conflicts. Write a file with the conflicted content to CWD. Stage the file.
+     *  Return 1 meaning that a conflict exists. */
+    private static int handleMergeConflict(String fileName, String curBlobContent, String branchBlobContent) {
+//        String curContent = (curBlobHash == null)? "" : curBlobHash;
+//        String branchContent = (branchBlobHash == null)? "" : branchBlobHash;
+        String conflictedFileContent = "<<<<<<< HEAD\n"
+                                        + curBlobContent
+                                        + "=======\n"
+                                        + branchBlobContent
+                                        + ">>>>>>>";
+        try {
+            writeContents(join(CWD, fileName), conflictedFileContent);
+            Files.copy(join(CWD, fileName).toPath(),
+                    join(STAGE, fileName).toPath(), REPLACE_EXISTING);
+        }
+        catch (IOException e) {
+            throw Utils.error("IOException during file operation.");
+        }
+        return 1;
+    }
+
     /** Loop over all files in STAGE to print out a list of files staged for addition and a list of
      *  files staged for removal. Listed in lexicographical order. */
     static void displayStagedFiles(List<String> filesInStage) {
@@ -342,24 +601,8 @@ public class Repository {
      *      4) tracked in current commit but deleted from CWD; file not staged for removal */
     static void displayModificationsNotStagedForCommit(List<String> filesInCWD, List<String> filesInStage,
                                                        Map<String, String> curCommitBlobMap) {
-        System.out.println("=== Modifications Not Staged For Commit ===");
-        System.out.println("first test");
-        // serialize and hash files in CWD for ease of comparison of contents
-        // CWDBlobMap = new HashMap<String, String>
-        // STAGEBlobMap = new HashMap<String, String>
-        // out = new LinkedList<>()
-        // loop over STAGEBlobMap
-        // if fileName !in CWDBlobMap.keySet()
-        // print fileName (3)
-        // elif blob hash in STAGE != blob hash in CWD
-        // print fileName (2)
-        // remove from curCommitBlobMap
-        // loop over curCommitBlobMap <-O(N)
-        // if fileName !in CWD
-        // if keyString + fileName !in STAGE -> print fileName (4)
-        // elif blob hash in curCommit != blob hash in CWD
-        // if fileName !in STAGE(??) -> print fileName (1)
 
+        System.out.println("=== Modifications Not Staged For Commit ===");
         // Create blobMap for CWD and STAGE
         Map<String, String> CWDBlobMap = new HashMap<>();
         for (String f : filesInCWD) {
@@ -398,8 +641,6 @@ public class Repository {
                 out.add(file + " (modified)");
             }
         }
-
-        System.out.println("Testing");
         // Sort and print output list
         List<String> output = new LinkedList<>(out);
         Collections.sort(output);
@@ -475,9 +716,12 @@ public class Repository {
         return headMap.get(currentBranch);
     }
 
-    /** Get a commit object from its hash.
+    /** Get a commit object from its hash. Return null if input is null.
      * Cache the (hash, commit) pair if it has not been done so. */
     static Commit getCommitFromHash(String hash) {
+        if (hash == null) {
+            return null;
+        }
         if (!Commit.commitCache.containsKey(hash)) {
             try {
                 Commit targetCommit = readObject(join(Commit.COMMITS, hash), Commit.class);
