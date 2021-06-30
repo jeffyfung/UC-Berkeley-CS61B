@@ -21,7 +21,6 @@ public class Main {
         switch (firstArg) {
             case "init" -> {
                 validateNumArgs("init", args, 1);
-                Repository.checkForGitletDir();
                 Repository.initRepo();
             }
             case "add" -> {
@@ -63,7 +62,7 @@ public class Main {
                 Repository.checkForGitletDir();
                 Repository.status();
             }
-            case "checkout" -> { // TODO: revise
+            case "checkout" -> {
                 Repository.checkForGitletDir();
                 if (args.length == 1 || args.length > 4) {
                     System.out.println("Incorrect operands.");
@@ -116,8 +115,6 @@ public class Main {
         if (args.length != n) {
             System.out.println("Incorrect operands.");
             System.exit(0);
-//            throw new RuntimeException(
-//                    String.format("Invalid number of arguments for: %s.", cmd));
         }
     }
 }
