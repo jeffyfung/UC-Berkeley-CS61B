@@ -57,9 +57,18 @@ public class Repository {
         Commit.COMMITS.mkdir();
     }
 
+    /** Exit the program if gitlet directory has not been initialized in CWD */
+    static void checkForGitletDir() {
+        if (!GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+            System.exit(0);
+        }
+    }
+
     /** Copy a file from CWD to staging area. Overwrite previous entry of the same name
-     *  in the staging area. No action if the blob hash already exists in the staging
-     *  area (i.e. content already exists).
+     *  in the staging area. Remove file from staging area if the file version being added
+     *  is tracked by current commit, then exit. No action if the blob hash already
+     *  exists in the staging area (i.e. content already exists).
      */
     static void add(String fileName){
         if (!plainFilenamesIn(CWD).contains(fileName)) {
@@ -67,9 +76,10 @@ public class Repository {
             return;
         }
         String fileHash = sha1(readContents(join(CWD, fileName)));
-        String targetBlobHash = getCommitFromHash(getHeadHash()).getBlobMap().get(fileName); // O(log N)
-        if (targetBlobHash != null && targetBlobHash.equals(fileHash)) {
+        String curHeadBlobHash = getCommitFromHash(getHeadHash()).getBlobMap().get(fileName);
+        if (curHeadBlobHash != null && curHeadBlobHash.equals(fileHash)) {
             join(STAGE, fileName).delete();
+            join(STAGE, keyString.concat(fileName)).delete();
             // current commit contains the same version of file as the one in CWD
             // delete the file from CWD without any staging
             // return true if successfully deleted; return false if the file is not in STAGE
@@ -606,7 +616,7 @@ public class Repository {
 
         for (Map.Entry<String, String> blobPair : STAGEBlobMap.entrySet()) {
             String file = blobPair.getKey();
-            if (file.substring(0, keyStringLen).equals(keyString)) {
+            if (file.length() > keyStringLen && file.substring(0, keyStringLen).equals(keyString)) {
                 continue; }
             String blobHash = blobPair.getValue();
             if (!CWDBlobMap.containsKey(file)) {

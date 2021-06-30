@@ -14,49 +14,60 @@ public class Main {
      */
     public static void main(String[] args) {
         if (args.length == 0) {
-            throw Utils.error("Must have at least one argument");
+            System.out.println("Please enter a command.");
+            System.exit(0);
         }
         String firstArg = args[0];
         switch (firstArg) {
             case "init" -> {
                 validateNumArgs("init", args, 1);
+                Repository.checkForGitletDir();
                 Repository.initRepo();
             }
             case "add" -> {
                 validateNumArgs("add", args, 2);
+                Repository.checkForGitletDir();
                 Repository.add(args[1]);
             }
             case "commit" -> {
-                if (args.length == 1) {
+                if (args.length == 1 || args[1].equals("")) {
                     System.out.println("Please enter a commit message.");
-                    return;
+                    System.exit(0);
                 }
                 validateNumArgs("commit", args, 2);
+                Repository.checkForGitletDir();
                 Repository.commit(args[1]);
             }
             case "rm" -> {
                 validateNumArgs("rm", args, 2);
+                Repository.checkForGitletDir();
                 Repository.remove(args[1]);
             }
             case "log" -> {
                 validateNumArgs("log", args, 1);
+                Repository.checkForGitletDir();
                 Repository.log();
             }
             case "global-log" -> {
                 validateNumArgs("global-log", args, 1);
+                Repository.checkForGitletDir();
                 Repository.globalLog();
             }
             case "find" -> {
                 validateNumArgs("find", args, 2);
+                Repository.checkForGitletDir();
                 Repository.find(args[1]);
             }
             case "status" -> {
                 validateNumArgs("status", args, 1);
+                Repository.checkForGitletDir();
                 Repository.status();
             }
-            case "checkout" -> {
+            case "checkout" -> { // TODO: revise
+                Repository.checkForGitletDir();
                 if (args.length == 1 || args.length > 4) {
-                    throw Utils.error("Invalid number of arguments for: %s.", args[0]);
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
                 }
                 else if (args.length == 2) {
                     Repository.checkoutBranch(args[1]);
@@ -70,32 +81,43 @@ public class Main {
                     Repository.checkout(args[1], args[3]);
                 }
                 else {
-                    throw Utils.error("Incorrect arguments for: %s.", args[0]);
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
                 }
             }
             case "branch" -> {
                 validateNumArgs("branch", args, 2);
+                Repository.checkForGitletDir();
                 Repository.branch(args[1]);
             }
             case "rm-branch" -> {
                 validateNumArgs("rm-branch", args, 2);
+                Repository.checkForGitletDir();
                 Repository.rm_branch(args[1]);
             }
             case "reset" -> {
                 validateNumArgs("reset", args, 2);
+                Repository.checkForGitletDir();
                 Repository.reset(args[1]);
             }
             case "merge" -> {
                 validateNumArgs("merge", args, 2);
+                Repository.checkForGitletDir();
                 Repository.merge(args[1]);
+            }
+            default -> {
+                System.out.println("No command with that name exists.");
+                System.exit(0);
             }
         }
     }
 
     public static void validateNumArgs(String cmd, String[] args, int n) {
         if (args.length != n) {
-            throw new RuntimeException(
-                    String.format("Invalid number of arguments for: %s.", cmd));
+            System.out.println("Incorrect operands.");
+            System.exit(0);
+//            throw new RuntimeException(
+//                    String.format("Invalid number of arguments for: %s.", cmd));
         }
     }
 }

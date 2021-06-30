@@ -4,7 +4,6 @@ package gitlet;
 import static gitlet.Utils.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -26,7 +25,8 @@ public class Commit implements Serializable {
     private final String commitMsg;
     /** Commit date */
     private final Date commitDate;
-    /** Map from file name to blob hash. Indicates which version of content does the commit tracks. */
+    /** Map from file name to blob hash. Indicates which version of content does the commit
+    * tracks. */
     private final Map<String, String> blobMap;
     /** Hash of (first) parent commit. Can be used to trace back to initial commit */
     private final String parentCommitHash;
@@ -38,9 +38,11 @@ public class Commit implements Serializable {
     private transient Commit parentCommit;
     /** Second parent commit object. Not serialized. */
     private transient Commit secondParentCommit;
-    // TODO : make use of cached parentCommit / secondParentCommit for quicker retrieval in log and makeCommit
+    // TODO : make use of cached parentCommit / secondParentCommit for quicker retrieval in log
+    // and makeCommit
 
-    public Commit(String commitMsg, Date commitDate, String parentCommitHash, Map<String, String> blobMap) {
+    public Commit(String commitMsg, Date commitDate, String parentCommitHash, Map<String,
+            String> blobMap) {
         this.commitMsg = commitMsg;
         this.commitDate = commitDate;
         this.parentCommitHash = parentCommitHash;
@@ -55,7 +57,8 @@ public class Commit implements Serializable {
                 null, new Repository.StringTreeMap());
         Repository.currentBranch = "master";
         commitHelper(initCommit);
-        writeContents(join(Repository.GITLET_DIR, "currentBranch"), Repository.currentBranch);
+        writeContents(join(Repository.GITLET_DIR, "currentBranch"),
+                Repository.currentBranch);
     }
 
     /** Create a new commit. Its parent commit is the HEAD of current branch and is represented by hash.
@@ -118,7 +121,8 @@ public class Commit implements Serializable {
         writeContents(cf, commitByte);
 
         if (Repository.currentBranch == null) {
-            Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR, "currentBranch"));
+            Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR,
+                    "currentBranch"));
         }
         Repository.headMap.put(Repository.currentBranch, commitHash);
         writeObject(join(Repository.GITLET_DIR, "headMap"), (Serializable) Repository.headMap);
