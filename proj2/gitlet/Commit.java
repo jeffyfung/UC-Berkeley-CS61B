@@ -6,7 +6,6 @@ import static gitlet.Utils.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.*;
 
 /** Represents a gitlet commit object.
@@ -32,7 +31,7 @@ public class Commit implements Serializable {
     /** Hash of (first) parent commit. Can be used to trace back to initial commit */
     private final String parentCommitHash;
     /** Hash of second parent commit. Null for non-merge commit */
-    private String secondParentCommitHash;
+    private String secondParentCommitHash = null;
     /** Map from commit hash to runtime commit object. Not serialized */
     static transient Map<String, Commit> commitCache = new HashMap<>();
     /** Parent commit object. Not serialized. */
@@ -135,5 +134,7 @@ public class Commit implements Serializable {
     public String getCommitMsg() { return this.commitMsg; }
 
     public String getParentCommitHash() { return this.parentCommitHash; }
+
+    public String getSecondParentCommitHash() { return this.secondParentCommitHash; }
 
 }

@@ -12,8 +12,6 @@ import static java.nio.file.StandardCopyOption.*;
 
 import static gitlet.Utils.*;
 
-// TODO : confirm other commands' compatibility with merge + write more integration test on merge.
-
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
@@ -40,8 +38,6 @@ public class Repository {
     /** label for files that are staged to be removed */
     static String keyString = "[[del[[";
     static int keyStringLen = keyString.length();
-//    /** Map from blob hash to file name */
-//    static Map<String, String> blobToFileNameMap = new TreeMap<>();
 
     /** Call setupPersistence to create folders holding .gitlet, stage, commits, blobs.
      * Make an initial commit by calling makeInitCommit.
@@ -121,7 +117,6 @@ public class Repository {
     /** Display the history of commit starting from current head commit to initial commit,
      *  starting with current commit. For merge commits, ignore second parents.
      *  Print out the commit id, time and commit message of each commit. */
-    // update to account for merge commits - add a row displaying 2 parents
     static void log() {
         logHelper(getHeadHash());
     }
@@ -156,7 +151,6 @@ public class Repository {
      *  modifications not staged for commit and untracked files. Mark the current
      *  branch with an asterisk. Entries listed in lexicographical order, not
      *  counting asterisk. */
-    // confirm compatibility with merge
     static void status() {
         List<String> filesInCWD = plainFilenamesIn(CWD);
         List<String> filesInStage = plainFilenamesIn(STAGE);
@@ -368,8 +362,8 @@ public class Repository {
         String splitPointHash = getSplitPointOfBranches(curHeadHash, branchHeadHash, branchName);
         Commit splitPoint = getCommitFromHash(splitPointHash);
 
-        // get shallow copy of blobMaps
         Map<String, String> splitPointBlobMap = splitPoint.getBlobMap(); // StringTreeMap iteration => O(D)
+        // get shallow copy of blobMaps
         Map<String, String> tmpCurHeadBlobMap = new HashMap<>(curHeadBlobMap);
         Map<String, String> tmpBranchHeadBlobMap = new HashMap<>(branchHeadBlobMap);
         int conflict = 0;
@@ -378,9 +372,6 @@ public class Repository {
             String fileName = splitPointPair.getKey();
             VersionComparator cur = compareFile(splitPointPair, fileName, tmpCurHeadBlobMap);
             VersionComparator branch = compareFile(splitPointPair, fileName, tmpBranchHeadBlobMap);
-//            System.out.println(fileName);
-//            System.out.println("cur: " + cur.num);
-//            System.out.println("branch: " + branch.num);
             if (cur.num == 1 && branch.num == 0) {
                 // case 1a - no action
             }
@@ -471,8 +462,8 @@ public class Repository {
         if (curHeadHash.equals(branchHeadHash)) {
             System.exit(0);
         }
-        // create a list of commits in current branch starting from current commit to init commit
-        List<String> currentLineOfCommit = new LinkedList<>();
+        // create a set of commits in current branch containing from current commit to init commit
+        Set<String> currentLineOfCommit = new HashSet<>();
         String curCommitHash = curHeadHash;
         while (curCommitHash != null) {
             if (curCommitHash.equals(branchHeadHash)) {
@@ -482,8 +473,6 @@ public class Repository {
             currentLineOfCommit.add(curCommitHash);
             curCommitHash = getCommitFromHash(curCommitHash).getParentCommitHash();
         }
-        // reverse the list for quicker match
-        Collections.reverse(currentLineOfCommit);
         // find match from given branch
         String branchCommitHash = branchHeadHash;
         while (branchCommitHash != null) {
@@ -498,8 +487,9 @@ public class Repository {
             }
             branchCommitHash = getCommitFromHash(branchCommitHash).getParentCommitHash();
         }
-        System.out.println("Somethings wrong!!"); //TODO: delete this line after testing
-        return null;
+        System.out.println("Error: cannot locate a split point");
+        System.exit(0);
+        return "";
     }
 
     /** Compare file version of an entry in split point's blob map with the corresponding entry in
@@ -675,6 +665,10 @@ public class Repository {
     private static void displayCommitInfo(String hash, Commit commit){
         System.out.println("===");
         System.out.println("commit ".concat(hash));
+        if (commit.getSecondParentCommitHash() != null){
+            System.out.println("Merge: " + commit.getParentCommitHash().substring(0, 7) + " "
+                    + commit.getSecondParentCommitHash().substring(0, 7));
+        }
         DateFormat dateFormat = new SimpleDateFormat("E MMM dd HH:mm:ss yyyy Z");
         System.out.println("Date: ".concat(dateFormat.format(commit.getCommitDate())));
         System.out.println(commit.getCommitMsg().concat("\n"));
