@@ -12,7 +12,7 @@ import static java.nio.file.StandardCopyOption.*;
 
 import static gitlet.Utils.*;
 
-// TODO : debug merge + confirm other commands' compatibility with merge + write more integration test on merge.
+// TODO : confirm other commands' compatibility with merge + write more integration test on merge.
 
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
@@ -121,7 +121,7 @@ public class Repository {
     /** Display the history of commit starting from current head commit to initial commit,
      *  starting with current commit. For merge commits, ignore second parents.
      *  Print out the commit id, time and commit message of each commit. */
-    // update to account for merge commits
+    // update to account for merge commits - add a row displaying 2 parents
     static void log() {
         logHelper(getHeadHash());
     }
@@ -336,11 +336,8 @@ public class Repository {
     static void merge(String branchName) {
         // failure cases
         String curHeadHash = getHeadHash();
-        Commit curHeadCommit = getCommitFromHash(curHeadHash);
-        Map<String, String> curHeadBlobMap = curHeadCommit.getBlobMap();
-        String branchHeadHash = getHeadHash(branchName);
-        Commit branchHeadCommit = getCommitFromHash(branchHeadHash);
-        // check there is an untracked file (by current commit) in CWD
+        Map<String, String> curHeadBlobMap = getCommitFromHash(curHeadHash).getBlobMap();
+        // check if there is an untracked file (by current commit) in CWD
         for (String f : plainFilenamesIn(CWD)) {
             if (!curHeadBlobMap.containsKey(f)) {
                 System.out.println("There is an untracked file in the way; delete it, " +
@@ -353,11 +350,12 @@ public class Repository {
             System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
-        // check if branch exists and is not itself
+        // check if given branch exists
         if (!headMap.containsKey(branchName)) {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
         }
+        // check that given branch is not current branch
         if (branchName.equals(currentBranch)) {
             System.out.println("Cannot merge a branch with itself.");
             System.exit(0);
@@ -365,9 +363,10 @@ public class Repository {
 
         // get split point and check if the two heads are equal, or if one is an ancestor
         // of another
+        String branchHeadHash = getHeadHash(branchName);
+        Map<String, String> branchHeadBlobMap = getCommitFromHash(branchHeadHash).getBlobMap();
         String splitPointHash = getSplitPointOfBranches(curHeadHash, branchHeadHash, branchName);
         Commit splitPoint = getCommitFromHash(splitPointHash);
-        Map<String, String> branchHeadBlobMap = branchHeadCommit.getBlobMap();
 
         // get shallow copy of blobMaps
         Map<String, String> splitPointBlobMap = splitPoint.getBlobMap(); // StringTreeMap iteration => O(D)
@@ -536,8 +535,6 @@ public class Repository {
     /** Handles merge conflicts. Write a file with the conflicted content to CWD. Stage the file.
      *  Return 1 meaning that a conflict exists. */
     private static int handleMergeConflict(String fileName, String curBlobContent, String branchBlobContent) {
-//        String curContent = (curBlobHash == null)? "" : curBlobHash;
-//        String branchContent = (branchBlobHash == null)? "" : branchBlobHash;
         String conflictedFileContent = "<<<<<<< HEAD\n"
                                         + curBlobContent
                                         + "=======\n"
