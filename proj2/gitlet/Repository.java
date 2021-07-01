@@ -9,8 +9,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static java.nio.file.StandardCopyOption.*;
-
 import static gitlet.Utils.*;
+
+// TODO: shorten UID
 
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
@@ -535,11 +536,11 @@ public class Repository {
     /** Handles merge conflicts. Write a file with the conflicted content to CWD. Stage the file.
      *  Return 1 meaning that a conflict exists. */
     private static int handleMergeConflict(String fileName, String curBlobContent, String branchBlobContent) {
-        String conflictedFileContent = "<<<<<<< HEAD\n"
+        String conflictedFileContent = "<<<<<<< HEAD" + System.lineSeparator()
                                         + curBlobContent
-                                        + "=======\n"
+                                        + "=======" + System.lineSeparator()
                                         + branchBlobContent
-                                        + ">>>>>>>";
+                                        + ">>>>>>>\n";
         try {
             writeContents(join(CWD, fileName), conflictedFileContent);
             Files.copy(join(CWD, fileName).toPath(),
