@@ -468,61 +468,6 @@ public class Repository {
         clearStage();
     }
 
-//    static String getSplitPointOfBranches(String curHeadHash, String branchHeadHash, String branchName) {
-//        // exit immediately if the two branches share the same head commit
-//        if (curHeadHash.equals(branchHeadHash)) {
-//            System.exit(0);
-//        }
-//        // create a set of commits in current branch containing from current commit to init commit
-//        Set<String> currentLineOfCommit = scanCommitOnCurBranch(curHeadHash, branchHeadHash,
-//                new HashSet<String>());
-//        // find match from given branch
-//        return findMatchingCommitOnGivenBranch(branchHeadHash, curHeadHash, currentLineOfCommit,
-//                branchName);
-//    }
-//
-//    /** Scan through the line of commits on current branch, starting from head commit to
-//     *  init commit. Print notice and exit if head of given branch is an ancestor of that of
-//     *  current branch */
-//    private static Set<String> scanCommitOnCurBranch(String hash, String branchHeadHash,
-//                                              Set<String> currentLineOfCommit) {
-//        if (hash == null) {
-//            return currentLineOfCommit;
-//        }
-//        if (hash.equals(branchHeadHash)) {
-//            System.out.println("Given branch is an ancestor of the current branch.");
-//            System.exit(0);
-//        }
-//        currentLineOfCommit.add(hash);
-////        String secondParentHash = getCommitFromHash(hash).getSecondParentCommitHash();
-//        scanCommitOnCurBranch(getCommitFromHash(hash).getSecondParentCommitHash(), branchHeadHash,
-//                currentLineOfCommit);
-//        return scanCommitOnCurBranch(getCommitFromHash(hash).getParentCommitHash(),
-//                branchHeadHash, currentLineOfCommit);
-//    }
-//
-//    /** Find last common ancestor commit between current branch and given branch by scanning
-//     *  through the line of commits on given branch. Checkout given branch, print notice and exit
-//     *  if head of current branch is an ancestor of that of given branch. */
-//    private static String findMatchingCommitOnGivenBranch(String hash, String curHeadHash,
-//                                                          Set<String> clof, String branchName) {
-//        if (hash == null) {
-//            System.out.println("Error: cannot locate a split point.");
-//            System.exit(0);
-//        }
-//        if (hash.equals(curHeadHash)) {
-//            // fast-forward current branch
-//            checkoutBranch(branchName);
-//            System.out.println("Current branch fast-forwarded.");
-//            System.exit(0);
-//        }
-//        if (clof.contains(hash)) {
-//            return hash;
-//        }
-//        return findMatchingCommitOnGivenBranch(getCommitFromHash(hash).getParentCommitHash(),
-//                curHeadHash, clof, branchName);
-//    }
-
     /** Helper class for finding the last common ancestor of current branch and the given branch
      *  during a merge operation. */
     private static class splitPointFinder {
