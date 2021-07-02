@@ -51,7 +51,7 @@ public class Commit implements Serializable {
 
     /** Create a commit object with commitDate = 00:00:00 UTC, Thursday, 1 January 1970,
      * commitMsg = "initial commit" and no parent. */
-    static void makeInitCommit(){
+    static void makeInitCommit() {
         Date initDate = new Date(0);
         Commit initCommit = new Commit("initial commit", initDate,
                 null, new Repository.StringTreeMap());
@@ -61,11 +61,11 @@ public class Commit implements Serializable {
                 Repository.currentBranch);
     }
 
-    /** Create a new commit. Its parent commit is the HEAD of current branch and is represented by hash.
-     *  Record the time of commit. Its blobMap is identical to the parent except for files in STAGE.
-     *  If parent commit does not contain a blobMap (i.e. init commit), the new blobMap contains
-     *  only reference to files in STAGE in the format of (file name -> blob hash of serialized file content)
-     *  */
+    /** Create a new commit. Its parent commit is the HEAD of current branch and is represented by
+     *  hash. Record the time of commit. Its blobMap is identical to the parent except for files
+     *  in STAGE. If parent commit does not contain a blobMap (i.e. init commit), the new blobMap
+     *  contains only reference to files in STAGE in the format of (file name -> blob hash of
+     *  serialized file content). */
     public static void makeCommit(String commitMsg) {
         commitHelper(handleCommit(commitMsg));
     }
@@ -114,7 +114,7 @@ public class Commit implements Serializable {
     /** Private helper method to dump commit object into newly created file
      * named by serialized byte array's SHA-1 hash. Also update the head commit
      * of current branch and cache the commit object for quick runtime access. */
-    private static void commitHelper(Commit c){
+    private static void commitHelper(Commit c) {
         byte[] commitByte = serialize(c);
         String commitHash = sha1(commitByte);
         writeContents(join(COMMITS, commitHash), commitByte);
@@ -122,22 +122,20 @@ public class Commit implements Serializable {
         try {
             shortCommitMap = readObject(join(COMMITS, "shortenedCommitIdMap"),
                     Repository.StringHashMap.class);
-        }
-        catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException ignored) {
         }
         shortCommitMap.put(commitHash.substring(0, 8), commitHash); //6
         writeObject(join(COMMITS, "shortenedCommitIdMap"), (Serializable) shortCommitMap);
         if (Repository.currentBranch == null) {
-            Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR,"currentBranch"));
+            Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR,
+                    "currentBranch"));
         }
         Repository.headMap.put(Repository.currentBranch, commitHash);
         writeObject(join(Repository.GITLET_DIR, "headMap"), (Serializable) Repository.headMap);
         commitCache.put(commitHash, c);
     }
 
-    public Map<String, String> getBlobMap(){
-        return this.blobMap;
-    }
+    public Map<String, String> getBlobMap() { return this.blobMap; }
 
     public Date getCommitDate() { return this.commitDate; }
 
