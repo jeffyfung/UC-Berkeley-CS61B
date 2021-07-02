@@ -125,7 +125,7 @@ public class Commit implements Serializable {
         }
         catch (IllegalArgumentException ignored) {
         }
-        shortCommitMap.put(commitHash.substring(0, 6), commitHash);
+        shortCommitMap.put(commitHash.substring(0, 8), commitHash); //6
         writeObject(join(COMMITS, "shortenedCommitIdMap"), (Serializable) shortCommitMap);
         if (Repository.currentBranch == null) {
             Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR,"currentBranch"));

@@ -682,7 +682,7 @@ public class Repository {
         if (hash == null) {
             return null;
         }
-        if (hash.length() == 6) {
+        if (hash.length() == 8) { //6
             if (Commit.shortCommitMap.isEmpty()) {
                 Commit.shortCommitMap = readObject(join(Commit.COMMITS,"shortenedCommitIdMap"),
                     StringHashMap.class);
