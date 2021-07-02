@@ -44,8 +44,8 @@ public class Repository {
 
     private static void setupPersistence() {
         if (!GITLET_DIR.mkdir()) {
-            System.out.println("A Gitlet version-control system already exists in the current" +
-                    "directory.");
+            System.out.println("A Gitlet version-control system already exists in the current"
+                    + "directory.");
             System.exit(0);
         }
         STAGE.mkdir();
@@ -106,9 +106,8 @@ public class Repository {
             if (!join(STAGE, fileName).delete()) {
                 throw Utils.error("Error when deleting %s from staging area.", fileName);
             }
-        }
         // check if current commit contains fileName
-        else if (getCommitFromHash(getHeadHash()).getBlobMap().containsKey(fileName)) {
+        } else if (getCommitFromHash(getHeadHash()).getBlobMap().containsKey(fileName)) {
             File fileStagedForRemoval = join(STAGE, keyString.concat(fileName));
             createFile(fileStagedForRemoval);
             // delete fileName from CWD. return false if fileName does not exist in CWD
@@ -211,8 +210,8 @@ public class Repository {
             restrictedDelete(f);
         }
         // Copy files from branch head to CWD
-        for (Map.Entry<String, String> blobPair :
-                getCommitFromHash(targetHeadHash).getBlobMap().entrySet()) {
+        for (Map.Entry<String, String> blobPair
+                : getCommitFromHash(targetHeadHash).getBlobMap().entrySet()) {
             writeContents(new File(blobPair.getKey()),
                     readContentsAsString(join(BLOBS, blobPair.getValue())));
         }
@@ -256,14 +255,14 @@ public class Repository {
         if (headMap.remove(branchName) == null) {
             System.out.println("A branch with that name does not exist.");
             return;
-        }
-        else {
+        } else {
             writeObject(join(GITLET_DIR, "headMap"), (Serializable) headMap);
         }
     }
 
     /** Check out all files tracked by the given commit. Removes tracked files that are not
      *  present in that commit. Move current branch's head to that commit. Clear the stage.
+     *  Accept abbreviated commit id (i.e. first 8 characters of full id).
      */
     static void reset(String commitHash) {
         // warns if there is an untracked file in CWD
@@ -488,7 +487,8 @@ public class Repository {
 
     /** Handles merge conflicts. Write a file with the conflicted content to CWD. Stage the file.
      *  Return 1 meaning that a conflict exists. */
-    private static int handleMergeConflict(String fileName, String curBlobContent, String branchBlobContent) {
+    private static int handleMergeConflict(String fileName, String curBlobContent,
+                                           String branchBlobContent) {
         String conflictedFileContent = "<<<<<<< HEAD" + System.lineSeparator()
                                         + curBlobContent
                                         + "=======" + System.lineSeparator()
@@ -536,7 +536,9 @@ public class Repository {
         for (Map.Entry<String, String> branchPair : headMap.entrySet()) {
             if (branchPair.getKey().equals(currentBranch)) {
                 System.out.println("*".concat(branchPair.getKey()));
-            } else { System.out.println(branchPair.getKey()); }
+            } else {
+                System.out.println(branchPair.getKey());
+            }
         }
         System.out.println();
     }
@@ -569,7 +571,8 @@ public class Repository {
         for (Map.Entry<String, String> blobPair : stageBlobMap.entrySet()) {
             String file = blobPair.getKey();
             if (file.length() > keyStringLen && file.substring(0, keyStringLen).equals(keyString)) {
-                continue; }
+                continue;
+            }
             String blobHash = blobPair.getValue();
             if (!cwdBlobMap.containsKey(file)) {
                 out.add(file + " (deleted)");
@@ -677,7 +680,7 @@ public class Repository {
         if (hash == null) {
             return null;
         }
-        if (hash.length() == 8) { //6
+        if (hash.length() == 8) {
             if (Commit.shortCommitMap.isEmpty()) {
                 Commit.shortCommitMap = readObject(join(Commit.COMMITS,"shortenedCommitIdMap"),
                     StringHashMap.class);
@@ -767,7 +770,8 @@ public class Repository {
 
         /** Populate a map indicating potential candidates for the last common ancestor commit
          *  between current and given branch. Checkout given branch, print notice and exit if head
-         *  of current branch is an ancestor of that of given branch. */
+         *  of current branch is an ancestor of that of given branch. Accept abbreviated commit
+         *  id (i.e. first 8 characters of full id). */
         void findCommonAncestorsCommits(String hash) {
             if (hash == null) {
                 return;
@@ -792,7 +796,7 @@ public class Repository {
         int num;
         String blobHash;
 
-        public VersionComparator(int num, String blobHash){
+        VersionComparator(int num, String blobHash){
             this.num = num;
             this.blobHash = blobHash;
         }

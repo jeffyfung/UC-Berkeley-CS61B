@@ -32,7 +32,7 @@ public class Commit implements Serializable {
     private final String parentCommitHash;
     /** Hash of second parent commit. Null for non-merge commit */
     private String secondParentCommitHash = null;
-    /** Map from first 6 characters of commit hash to its full version */
+    /** Map from first 8 characters of commit hash to its full version */
     static Map<String, String> shortCommitMap = new Repository.StringHashMap();
     /** Map from commit hash to runtime commit object. Not serialized */
     static transient Map<String, Commit> commitCache = new HashMap<>();
@@ -124,7 +124,7 @@ public class Commit implements Serializable {
                     Repository.StringHashMap.class);
         } catch (IllegalArgumentException ignored) {
         }
-        shortCommitMap.put(commitHash.substring(0, 8), commitHash); //6
+        shortCommitMap.put(commitHash.substring(0, 8), commitHash);
         writeObject(join(COMMITS, "shortenedCommitIdMap"), (Serializable) shortCommitMap);
         if (Repository.currentBranch == null) {
             Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR,
