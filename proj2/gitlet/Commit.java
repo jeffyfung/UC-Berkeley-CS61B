@@ -32,14 +32,14 @@ public class Commit implements Serializable {
     private final String parentCommitHash;
     /** Hash of second parent commit. Null for non-merge commit */
     private String secondParentCommitHash = null;
+    /** Map from first 6 characters of commit hash to its full version */
+    static Map<String, String> shortCommitMap = new Repository.StringHashMap();
     /** Map from commit hash to runtime commit object. Not serialized */
     static transient Map<String, Commit> commitCache = new HashMap<>();
     /** Parent commit object. Not serialized. */
     private transient Commit parentCommit;
     /** Second parent commit object. Not serialized. */
     private transient Commit secondParentCommit;
-    // TODO : make use of cached parentCommit / secondParentCommit for quicker retrieval in log
-    // and makeCommit
 
     public Commit(String commitMsg, Date commitDate, String parentCommitHash, Map<String,
             String> blobMap) {
@@ -117,12 +117,18 @@ public class Commit implements Serializable {
     private static void commitHelper(Commit c){
         byte[] commitByte = serialize(c);
         String commitHash = sha1(commitByte);
-        File cf = join(COMMITS, commitHash);
-        writeContents(cf, commitByte);
+        writeContents(join(COMMITS, commitHash), commitByte);
 
+        try {
+            shortCommitMap = readObject(join(COMMITS, "shortenedCommitIdMap"),
+                    Repository.StringHashMap.class);
+        }
+        catch (IllegalArgumentException ignored) {
+        }
+        shortCommitMap.put(commitHash.substring(0, 6), commitHash);
+        writeObject(join(COMMITS, "shortenedCommitIdMap"), (Serializable) shortCommitMap);
         if (Repository.currentBranch == null) {
-            Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR,
-                    "currentBranch"));
+            Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR,"currentBranch"));
         }
         Repository.headMap.put(Repository.currentBranch, commitHash);
         writeObject(join(Repository.GITLET_DIR, "headMap"), (Serializable) Repository.headMap);

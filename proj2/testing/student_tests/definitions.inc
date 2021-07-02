@@ -9,3 +9,5 @@ D COMMIT_LOG "(===[ ]*\ncommit [a-f0-9]+[ ]*\n(?:Merge:\s+[0-9a-f]{7}\s+[0-9a-f]
 D ARBLINE "[^\n]*(?=\n|\Z)"
 # Zero or more arbitrary full lines of text.
 D ARBLINES "(?:(?:.|\n)*(?:\n|\Z)|\A|\Z)"
+# Captures the first 6 characters of commit id in the commit header
+D ABBREV_HEADER "commit ([a-f0-9]{6})[a-f0-9]+"

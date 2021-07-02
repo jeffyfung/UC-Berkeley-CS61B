@@ -11,8 +11,6 @@ import java.util.*;
 import static java.nio.file.StandardCopyOption.*;
 import static gitlet.Utils.*;
 
-// TODO: shorten UID
-
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
@@ -35,7 +33,9 @@ public class Repository {
     static String currentBranch;
     /** label for files that are staged to be removed */
     static String keyString = "[[del[[";
+    /** Length of keyString label */
     static int keyStringLen = keyString.length();
+    /** Length of
 
     /** Call setupPersistence to create folders holding .gitlet, stage, commits, blobs.
      * Make an initial commit by calling makeInitCommit.
@@ -133,8 +133,10 @@ public class Repository {
      *  order of their hash strings, formatted as specified in displayCommitInfo. */
     static void globalLog() {
         for (String curCommitHash : plainFilenamesIn(Commit.COMMITS)) {
-            Commit curCommit = getCommitFromHash(curCommitHash);
-            displayCommitInfo(curCommitHash, curCommit);
+            if (!curCommitHash.equals("shortenedCommitIdMap")) {
+                Commit curCommit = getCommitFromHash(curCommitHash);
+                displayCommitInfo(curCommitHash, curCommit);
+            }
         }
     }
 
@@ -145,7 +147,8 @@ public class Repository {
         // for each hash, restore the commit object and its commitMsg -> display if equals
         boolean msgOutputted = false;
         for (String curCommitHash : plainFilenamesIn(Commit.COMMITS)) {
-            if (getCommitFromHash(curCommitHash).getCommitMsg().equals(msg)) {
+            if (!curCommitHash.equals("shortenedCommitIdMap") &&
+                    getCommitFromHash(curCommitHash).getCommitMsg().equals(msg)) {
                 System.out.println(curCommitHash);
                 msgOutputted = true;
             }
@@ -468,88 +471,6 @@ public class Repository {
         clearStage();
     }
 
-    /** Helper class for finding the last common ancestor of current branch and the given branch
-     *  during a merge operation. */
-    private static class splitPointFinder {
-
-        String curHeadHash;
-        String branchHeadHash;
-        String branchName;
-        Map<String, Integer> currentCommitDigraph = new HashMap<>();
-        Map<String, Integer> commonAncestorCommitCandidates = new HashMap<>();
-
-        splitPointFinder(String curHeadHash, String branchHeadHash, String branchName) {
-            this.curHeadHash = curHeadHash;
-            this.branchHeadHash = branchHeadHash;
-            this.branchName = branchName;
-        }
-
-        /** Get commit hash of the last common ancestor commit of current and given branch. */
-        String getSplitPointOfBranches() {
-            // exit immediately if the two branches share the same head commit
-            if (curHeadHash.equals(branchHeadHash)) {
-                System.exit(0);
-            }
-            // create a set of commits in current branch containing from current commit to init
-            // commit
-            scanCommitOnCurBranch(curHeadHash, 0);
-            // populate a set of candidates for last common ancestor commits
-            findCommonAncestorsCommits(branchHeadHash);
-            if (commonAncestorCommitCandidates.isEmpty()) {
-                System.out.println("Error: cannot locate split points");
-                System.exit(0);
-            }
-            String splitPointHash = null;
-            double cmp = Double.NEGATIVE_INFINITY;
-            for (String candidate : commonAncestorCommitCandidates.keySet()) {
-                if (commonAncestorCommitCandidates.get(candidate) > cmp) {
-                    splitPointHash = candidate;
-                    cmp = commonAncestorCommitCandidates.get(candidate);
-                }
-            }
-            return splitPointHash;
-        }
-
-        /** Populate a set of commits on current branch, starting from head commit to
-         *  init commit, and store the commits with associated priority in a map. Scan through all
-         *  parent commits. Priority is 0 at the current branch head and decrease towards init
-         *  commit. Print notice and exit if head of given branch is an ancestor of that of
-         *  current branch */
-        void scanCommitOnCurBranch(String hash, int counter) {
-            if (hash == null) {
-                return ;
-            }
-            if (hash.equals(branchHeadHash)) {
-                System.out.println("Given branch is an ancestor of the current branch.");
-                System.exit(0);
-            }
-            currentCommitDigraph.put(hash, counter);
-            scanCommitOnCurBranch(getCommitFromHash(hash).getParentCommitHash(), counter - 1);
-            scanCommitOnCurBranch(getCommitFromHash(hash).getSecondParentCommitHash(), counter - 1);
-        }
-
-        /** Populate a map indicating potential candidates for the last common ancestor commit
-         *  between current and given branch. Checkout given branch, print notice and exit if head
-         *  of current branch is an ancestor of that of given branch. */
-        void findCommonAncestorsCommits(String hash) {
-            if (hash == null) {
-                return ;
-            }
-            if (hash.equals(curHeadHash)) {
-                // fast-forward current branch
-                checkoutBranch(branchName);
-                System.out.println("Current branch fast-forwarded.");
-                System.exit(0);
-            }
-            if (currentCommitDigraph.containsKey(hash)) {
-                commonAncestorCommitCandidates.put(hash, currentCommitDigraph.get(hash));
-                return ;
-            }
-            findCommonAncestorsCommits(getCommitFromHash(hash).getParentCommitHash());
-            findCommonAncestorsCommits(getCommitFromHash(hash).getSecondParentCommitHash());
-        }
-    }
-
     /** Compare file version of an entry in split point's blob map with the corresponding entry in
      *  the given blob map.
      *  Output: 0 if the file version on given blob map is the same as that of split point.
@@ -568,17 +489,6 @@ public class Repository {
         num = (blobHashInSplitPoint.equals(blobHashInGiven)) ? 0 : 1;
         givenBlobMap.remove(fileName);
         return new VersionComparator(num, blobHashInGiven);
-    }
-
-    /** Helper class of merge command */
-    private static class VersionComparator{
-        int num;
-        String blobHash;
-
-        public VersionComparator(int num, String blobHash){
-            this.num = num;
-            this.blobHash = blobHash;
-        }
     }
 
     /** Handles merge conflicts. Write a file with the conflicted content to CWD. Stage the file.
@@ -772,6 +682,13 @@ public class Repository {
         if (hash == null) {
             return null;
         }
+        if (hash.length() == 6) {
+            if (Commit.shortCommitMap.isEmpty()) {
+                Commit.shortCommitMap = readObject(join(Commit.COMMITS,"shortenedCommitIdMap"),
+                    StringHashMap.class);
+            }
+            hash = Commit.shortCommitMap.get(hash);
+        }
         if (!Commit.commitCache.containsKey(hash)) {
             try {
                 Commit targetCommit = readObject(join(Commit.COMMITS, hash), Commit.class);
@@ -795,5 +712,100 @@ public class Repository {
         }
     }
 
+    /** Helper class for finding the last common ancestor of current branch and the given branch
+     *  during a merge operation. */
+    private static class splitPointFinder {
+
+        String curHeadHash;
+        String branchHeadHash;
+        String branchName;
+        Map<String, Integer> currentCommitDigraph = new HashMap<>();
+        Map<String, Integer> commonAncestorCommitCandidates = new HashMap<>();
+
+        splitPointFinder(String curHeadHash, String branchHeadHash, String branchName) {
+            this.curHeadHash = curHeadHash;
+            this.branchHeadHash = branchHeadHash;
+            this.branchName = branchName;
+        }
+
+        /** Get commit hash of the last common ancestor commit of current and given branch. */
+        String getSplitPointOfBranches() {
+            // exit immediately if the two branches share the same head commit
+            if (curHeadHash.equals(branchHeadHash)) {
+                System.exit(0);
+            }
+            // create a set of commits in current branch containing from current commit to init
+            // commit
+            scanCommitOnCurBranch(curHeadHash, 0);
+            // populate a set of candidates for last common ancestor commits
+            findCommonAncestorsCommits(branchHeadHash);
+            if (commonAncestorCommitCandidates.isEmpty()) {
+                System.out.println("Error: cannot locate split points");
+                System.exit(0);
+            }
+            String splitPointHash = null;
+            double cmp = Double.NEGATIVE_INFINITY;
+            for (String candidate : commonAncestorCommitCandidates.keySet()) {
+                if (commonAncestorCommitCandidates.get(candidate) > cmp) {
+                    splitPointHash = candidate;
+                    cmp = commonAncestorCommitCandidates.get(candidate);
+                }
+            }
+            return splitPointHash;
+        }
+
+        /** Populate a set of commits on current branch, starting from head commit to
+         *  init commit, and store the commits with associated priority in a map. Scan through all
+         *  parent commits. Priority is 0 at the current branch head and decrease towards init
+         *  commit. Print notice and exit if head of given branch is an ancestor of that of
+         *  current branch */
+        void scanCommitOnCurBranch(String hash, int counter) {
+            if (hash == null) {
+                return ;
+            }
+            if (hash.equals(branchHeadHash)) {
+                System.out.println("Given branch is an ancestor of the current branch.");
+                System.exit(0);
+            }
+            currentCommitDigraph.put(hash, counter);
+            scanCommitOnCurBranch(getCommitFromHash(hash).getParentCommitHash(), counter - 1);
+            scanCommitOnCurBranch(getCommitFromHash(hash).getSecondParentCommitHash(), counter - 1);
+        }
+
+        /** Populate a map indicating potential candidates for the last common ancestor commit
+         *  between current and given branch. Checkout given branch, print notice and exit if head
+         *  of current branch is an ancestor of that of given branch. */
+        void findCommonAncestorsCommits(String hash) {
+            if (hash == null) {
+                return ;
+            }
+            if (hash.equals(curHeadHash)) {
+                // fast-forward current branch
+                checkoutBranch(branchName);
+                System.out.println("Current branch fast-forwarded.");
+                System.exit(0);
+            }
+            if (currentCommitDigraph.containsKey(hash)) {
+                commonAncestorCommitCandidates.put(hash, currentCommitDigraph.get(hash));
+                return ;
+            }
+            findCommonAncestorsCommits(getCommitFromHash(hash).getParentCommitHash());
+            findCommonAncestorsCommits(getCommitFromHash(hash).getSecondParentCommitHash());
+        }
+    }
+
+    /** Helper class of merge command */
+    private static class VersionComparator{
+        int num;
+        String blobHash;
+
+        public VersionComparator(int num, String blobHash){
+            this.num = num;
+            this.blobHash = blobHash;
+        }
+    }
+
     public static class StringTreeMap extends TreeMap<String, String> {}
+
+    public static class StringHashMap extends HashMap<String, String> {}
 }
