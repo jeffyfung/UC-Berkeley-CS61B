@@ -345,7 +345,7 @@ public class Repository {
 
         // get split point and check if the two heads are equal, or if one is an ancestor
         // of another
-        splitPointFinder spFinder = new splitPointFinder(curHeadHash, branchHeadHash, branchName);
+        SplitPointFinder spFinder = new SplitPointFinder(curHeadHash, branchHeadHash, branchName);
         String splitPointHash = spFinder.getSplitPointOfBranches();
         Commit splitPoint = getCommitFromHash(splitPointHash);
         Map<String, String> splitPointBlobMap = splitPoint.getBlobMap();
