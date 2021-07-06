@@ -119,13 +119,13 @@ public class Commit implements Serializable {
         String commitHash = sha1(commitByte);
         writeContents(join(COMMITS, commitHash), commitByte);
 
-        try {
-            shortCommitMap = readObject(join(COMMITS, "shortenedCommitIdMap"),
+        if (join(Repository.GITLET_DIR, "shortCommitIdMap").exists()) {
+            shortCommitMap = readObject(join(Repository.GITLET_DIR, "shortCommitIdMap"),
                     Repository.StringHashMap.class);
-        } catch (IllegalArgumentException ignored) {
         }
         shortCommitMap.put(commitHash.substring(0, 8), commitHash);
-        writeObject(join(COMMITS, "shortenedCommitIdMap"), (Serializable) shortCommitMap);
+        writeObject(join(Repository.GITLET_DIR, "shortCommitIdMap"),
+                (Serializable) shortCommitMap);
         if (Repository.currentBranch == null) {
             Repository.currentBranch = readContentsAsString(join(Repository.GITLET_DIR,
                     "currentBranch"));

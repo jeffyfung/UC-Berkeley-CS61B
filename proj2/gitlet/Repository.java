@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -32,7 +34,8 @@ public class Repository {
     static String keyString = "[[del[[";
     /** Length of keyString label */
     static int keyStringLen = keyString.length();
-    /** Length of
+    /** Map from remote name to path of remote directory */
+    static Map<String, String> remoteNameToDirMap = new StringHashMap();
 
     /** Call setupPersistence to create folders holding .gitlet, stage, commits, blobs.
      * Make an initial commit by calling makeInitCommit.
@@ -128,10 +131,8 @@ public class Repository {
      *  order of their hash strings, formatted as specified in displayCommitInfo. */
     static void globalLog() {
         for (String curCommitHash : plainFilenamesIn(Commit.COMMITS)) {
-            if (!curCommitHash.equals("shortenedCommitIdMap")) {
-                Commit curCommit = getCommitFromHash(curCommitHash);
-                displayCommitInfo(curCommitHash, curCommit);
-            }
+            Commit curCommit = getCommitFromHash(curCommitHash);
+            displayCommitInfo(curCommitHash, curCommit);
         }
     }
 
@@ -142,8 +143,7 @@ public class Repository {
         // for each hash, restore the commit object and its commitMsg -> display if equals
         boolean msgOutputted = false;
         for (String curCommitHash : plainFilenamesIn(Commit.COMMITS)) {
-            if (!curCommitHash.equals("shortenedCommitIdMap")
-                    && getCommitFromHash(curCommitHash).getCommitMsg().equals(msg)) {
+            if (getCommitFromHash(curCommitHash).getCommitMsg().equals(msg)) {
                 System.out.println(curCommitHash);
                 msgOutputted = true;
             }
@@ -229,9 +229,7 @@ public class Repository {
     /** Create a new branch and point its head to current commit (via commit hash).
      *  Do not switch to the new branch. */
     static void branch(String branchName) {
-        if (headMap.isEmpty()) {
-            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
-        }
+        importHeadMap();
         if (headMap.containsKey(branchName)) {
             System.out.println("A branch with that name already exists.");
             return;
@@ -243,18 +241,14 @@ public class Repository {
 
     /** Delete the branch with the given name. Retain all commits and files associated. */
     static void rmBranch(String branchName) {
-        currentBranch = readContentsAsString(join(GITLET_DIR, "currentBranch"));
+        importCurrentBranch();
         if (currentBranch.equals(branchName)) {
             System.out.println("Cannot remove the current branch.");
             return;
         }
-
-        if (headMap.isEmpty()) {
-            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
-        }
+        importHeadMap();
         if (headMap.remove(branchName) == null) {
             System.out.println("A branch with that name does not exist.");
-            return;
         } else {
             writeObject(join(GITLET_DIR, "headMap"), (Serializable) headMap);
         }
@@ -506,7 +500,7 @@ public class Repository {
 
     /** Loop over all files in STAGE to print out a list of files staged for addition and a list of
      *  files staged for removal. Listed in lexicographical order. */
-    static void displayStagedFiles(List<String> filesInStage) {
+    static private void displayStagedFiles(List<String> filesInStage) {
         StringBuilder stagedFiles = new StringBuilder();
         StringBuilder filesStagedForRemoval = new StringBuilder();
         for (String f : filesInStage) {
@@ -527,12 +521,8 @@ public class Repository {
 
     /** Loop over headMap and print all branch names in lexicographical order.
      *  Add an asterisk in front of the name of current branch. */
-    static void displayBranchInfo() {
+    static private void displayBranchInfo() {
         System.out.println("=== Branches ===");
-        if (headMap.isEmpty()) {
-            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
-        }
-        currentBranch = readContentsAsString(join(GITLET_DIR, "currentBranch"));
         for (Map.Entry<String, String> branchPair : headMap.entrySet()) {
             if (branchPair.getKey().equals(currentBranch)) {
                 System.out.println("*".concat(branchPair.getKey()));
@@ -549,7 +539,7 @@ public class Repository {
      *      2) file version in STAGE different from file version in CWD
      *      3) exists in STAGE but deleted from CWD
      *      4) tracked in current commit but deleted from CWD; file not staged for removal */
-    static void displayModificationsNotStagedForCommit(List<String> filesInCWD,
+    static private void displayModificationsNotStagedForCommit(List<String> filesInCWD,
                                                        List<String> filesInStage,
                                                        Map<String, String> curCommitBlobMap) {
 
@@ -605,7 +595,7 @@ public class Repository {
     /** Print out all files in CWD that are neither staged for addition nor
      *  tracked in current commit, in lexicographical order. Also include files staged
      *  for removal but then re-created without Gitlet's knowledge. */
-    static void displayUntrackedFiles(List<String> filesInCWD, List<String> filesInStage,
+    static private void displayUntrackedFiles(List<String> filesInCWD, List<String> filesInStage,
                                       Map<String, String> curCommitBlobMap) {
         System.out.println("=== Untracked Files ===");
         for (String f : filesInCWD) {
@@ -628,7 +618,6 @@ public class Repository {
     }
 
     /** Display information of a commit. */
-    // update to account for merge commits
     private static void displayCommitInfo(String hash, Commit commit) {
         System.out.println("===");
         System.out.println("commit ".concat(hash));
@@ -640,6 +629,180 @@ public class Repository {
         System.out.println("Date: ".concat(dateFormat.format(commit.getCommitDate())));
         System.out.println(commit.getCommitMsg().concat("\n"));
     }
+
+    /* ============================================================================================
+       Remote functions
+       ============================================================================================
+     */
+
+    /** Associate given remote name with given remote directory such that pushing, fetching and
+     * pulling can be called by the given remote name. User name and server information are not
+     * checked in this method. Print error if remote name exists.
+     */
+    static void addRemote(String remoteName, String remoteDirPath) {
+        importRemoteNameToDirMap();
+        if (remoteNameToDirMap.containsKey(remoteName)) {
+            System.out.println("A remote with that name already exists.");
+            System.exit(0);
+        }
+        remoteDirPath = remoteDirPath.replace("/", File.separator);
+        remoteDirPath = remoteDirPath.replace("\\", File.separator);
+        remoteDirPath = remoteDirPath.replace(".gitlet", "");
+        remoteDirPath = remoteDirPath.replace(File.separator + File.separator, File.separator);
+        remoteNameToDirMap.put(remoteName, remoteDirPath);
+        writeObject(join(GITLET_DIR, "remoteMap"), (Serializable) remoteNameToDirMap);
+    }
+
+    /** Remote the association of given remote name with given remote directory. Print error if
+     * the given remote name does not exist. */
+    static void rmRemote(String remoteName){
+        importRemoteNameToDirMap();
+        if (!remoteNameToDirMap.containsKey(remoteName)) {
+            System.out.println("A remote with that name does not exist.");
+            System.exit(0);
+        }
+        remoteNameToDirMap.remove(remoteName);
+        writeObject(join(GITLET_DIR, "remoteMap"), (Serializable) remoteNameToDirMap);
+    }
+
+    /** Append the local current branch's commits to the head of given branch at given
+     * remote directory (only the commits not already in given branch). Create a new branch if
+     * necessary. Then, set the head of the remote branch to the local current head (aka
+     * fast-forwarding) and update the remote CWD. Print error if the remote branch's head is
+     * not an ancestor of local current head. */
+    static void push(String remoteName, String remoteBranchName) {
+        if (!plainFilenamesIn(STAGE).isEmpty()) {
+            System.out.println("You have uncommitted changes.");
+            System.exit(0);
+        }
+        importRemoteNameToDirMap();
+        String remoteDirPath = checkForRemoteGitletDir(remoteName);
+        File remoteGitletDir = join(remoteDirPath, ".gitlet");
+        Map<String, String> remoteDirHeadMap = readObject(join(remoteGitletDir, "headMap"),
+                StringTreeMap.class);
+        String updatedHeadHash;
+        if (!remoteDirHeadMap.containsKey(remoteBranchName)) {
+            updatedHeadHash = pushHelper(remoteGitletDir, remoteDirHeadMap, remoteBranchName,
+                    null);
+        } else {
+            String localHeadHash = getHeadHash();
+            String remoteBranchHeadHash = remoteDirHeadMap.get(remoteBranchName);
+            if (localHeadHash.equals(remoteBranchHeadHash)) {
+                System.out.println("Remote is already up-to-date. No need to push.");
+                System.exit(0);
+            }
+            // scan over local branch to get a list of commits in the future of remote branch,
+            // which will be copied to remote branch
+            Set<String> commitTargets = scanOverRemoteBranch(localHeadHash, remoteBranchHeadHash,
+                    new HashSet<>());
+            // check if remoteBranchHead is an ancestor of local head
+            if (!commitTargets.remove(remoteBranchHeadHash)) {
+                System.out.println("Please pull down remote changes before pushing.");
+                System.exit(0);
+            }
+            updatedHeadHash = pushHelper(remoteGitletDir, remoteDirHeadMap, remoteBranchName,
+                    commitTargets);
+        }
+        // copy blobs in remote branch head to remote CWD
+        Map<String, String> updatedHeadBlobMap = getCommitFromHash(updatedHeadHash).getBlobMap();
+        for (Map.Entry<String, String> blobPair : updatedHeadBlobMap.entrySet()) {
+            Path src = Paths.get(remoteGitletDir.toString(), "blobs", blobPair.getValue());
+            Path dest = Paths.get(remoteDirPath, blobPair.getKey());
+            try {
+                Files.copy(src, dest, REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw Utils.error("IOException during file copy operation.");
+            }
+        }
+    }
+
+    /** To be updated */
+    static void fetch(String remoteName, String remoteBranch) {
+
+    }
+
+    /** Import mapping from remote name to remote directory */
+    static private void importRemoteNameToDirMap() {
+        if (remoteNameToDirMap.isEmpty() && join(GITLET_DIR, "remoteMap").exists()) {
+            remoteNameToDirMap = readObject(join(GITLET_DIR, "remoteMap"),
+                    StringHashMap.class);
+        }
+    }
+
+    /** Check if given remote name corresponds to a remote directory and if the directory
+     * contains a .gitlet directory. */
+    static private String checkForRemoteGitletDir(String remoteName) {
+        String remoteDirPath = remoteNameToDirMap.get(remoteName);
+        if (remoteDirPath == null || !(join(remoteDirPath, ".gitlet").exists())) {
+            System.out.println("Remote directory not found.");
+            System.exit(0);
+        }
+        return remoteDirPath;
+    }
+
+    /** Scan and copy commit and blob files from local branch (starting from branch head) to
+     * given remote branch in remote dir. If commitTargets is provided, only copy commits
+     * included in commitTargets. Return the hash of updated remote branch head. */
+    static private String pushHelper(File remoteGitletDir, Map<String, String> remoteDirHeadMap,
+                                   String remoteBranchName, Set<String> commitTargets) {
+        List<String> listOfCommits = (commitTargets == null)
+                ? plainFilenamesIn(Commit.COMMITS) : new ArrayList<>(commitTargets);
+        for (String c : listOfCommits) {
+            File destinationCommit = join(remoteGitletDir, "commits", c);
+            if (!destinationCommit.exists()) {
+                try {
+                    Files.copy(join(Commit.COMMITS, c).toPath(), destinationCommit.toPath());
+                } catch (IOException e) {
+                    throw Utils.error("IOException during file copy operation.");
+                }
+            }
+        }
+        for (String blob : plainFilenamesIn(BLOBS)) {
+            File destinationBlob = join(remoteGitletDir, "blobs", blob);
+            if (!destinationBlob.exists()) {
+                try {
+                    Files.copy(join(BLOBS, blob).toPath(), destinationBlob.toPath());
+                } catch (IOException e) {
+                    throw Utils.error("IOException during file copy operation.");
+                }
+            }
+        }
+        // insert pointer to remoteDirHeadMap
+        importHeadMap();
+        importCurrentBranch();
+        remoteDirHeadMap.put(remoteBranchName, headMap.get(currentBranch));
+        writeObject(join(remoteGitletDir, "headMap"), (Serializable) remoteDirHeadMap);
+        return remoteDirHeadMap.get(remoteBranchName);
+    }
+
+    /** Scan over commit hashes on local branch starting from given hash to initial commit by
+     * recursion. Terminate the recursion if hash is equal to remoteHeadHash. Return a list of
+     * commits scanned, which is a list of commits on local branch that are beyond the last common
+     * ancestor commit of local branch and remote branch. */
+    static private HashSet<String> scanOverRemoteBranch(String hash, String remoteBranchHeadHash,
+                                             HashSet<String> commitTargets) {
+        if (hash == null) {
+            return commitTargets;
+        }
+        commitTargets.add(hash);
+        if (hash.equals(remoteBranchHeadHash)) {
+            return commitTargets;
+        }
+        Commit localCommitHash = readObject(join(Commit.COMMITS, hash), Commit.class);
+        HashSet<String> l1 = scanOverRemoteBranch(localCommitHash.getParentCommitHash(),
+                remoteBranchHeadHash, commitTargets);
+        HashSet<String> l2 = scanOverRemoteBranch(localCommitHash.getSecondParentCommitHash(),
+                remoteBranchHeadHash, commitTargets);
+        // TODO: scales linearly with total number of splitting branches
+        l1.addAll(l2);
+        return l1;
+    }
+
+    /* ============================================================================================
+       General helper functions
+       ============================================================================================
+     */
+
 
     /** Clear the STAGE directory */
     private static void clearStage() {
@@ -653,9 +816,7 @@ public class Repository {
     /** Get hash string of input branch. Check if headMap is empty.
      *  If empty, deserialize headMap file. */
     static String getHeadHash(String branchName) {
-        if (headMap.isEmpty()) {
-            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
-        }
+        importHeadMap();
         String out = headMap.get(branchName);
         if (out == null) {
             System.out.println("No such branch exists.");
@@ -667,10 +828,8 @@ public class Repository {
     /** Get hash string of current branch head. Check if headMap is empty.
      *  If empty, deserialize headMap file. */
     static String getHeadHash() {
-        if (headMap.isEmpty()) {
-            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
-        }
-        currentBranch = readContentsAsString(join(GITLET_DIR, "currentBranch"));
+        importHeadMap();
+        importCurrentBranch();
         return headMap.get(currentBranch);
     }
 
@@ -682,10 +841,14 @@ public class Repository {
         }
         if (hash.length() == 8) {
             if (Commit.shortCommitMap.isEmpty()) {
-                Commit.shortCommitMap = readObject(join(Commit.COMMITS,"shortenedCommitIdMap"),
+                Commit.shortCommitMap = readObject(join(GITLET_DIR,"shortCommitIdMap"),
                     StringHashMap.class);
             }
             hash = Commit.shortCommitMap.get(hash);
+            if (hash == null) {
+                System.out.println("No commit with that id exists.");
+                System.exit(0);
+            }
         }
         if (!Commit.commitCache.containsKey(hash)) {
             try {
@@ -706,6 +869,19 @@ public class Repository {
         } catch (IOException e) {
             throw Utils.error("Encounter IOException when creating new file ((%s))", f);
         }
+    }
+
+    /** Import headMap from .gitlet directory if it is empty. HeadMap is empty when initialized. */
+    static Map<String, String> importHeadMap() {
+        if (headMap.isEmpty()) {
+            headMap = readObject(join(GITLET_DIR, "headMap"), StringTreeMap.class);
+        }
+        return headMap;
+    }
+
+    static String importCurrentBranch() {
+        currentBranch = readContentsAsString(join(GITLET_DIR, "currentBranch"));
+        return currentBranch;
     }
 
     /** Helper class for finding the last common ancestor of current branch and the given branch
