@@ -245,6 +245,7 @@ public class RemoteRepo implements Serializable {
             try {
                 Files.copy(src, dst, REPLACE_EXISTING);
             } catch (IOException e) {
+                System.out.println(e);
                 throw Utils.error("IOException during file copy operation.");
             }
         }
