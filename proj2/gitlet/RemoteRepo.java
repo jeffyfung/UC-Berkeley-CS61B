@@ -49,9 +49,9 @@ public class RemoteRepo implements Serializable {
         this.remoteName = remoteName;
         this.remoteDir = join(Repository.CWD, this.remoteDirPath);
         this.remoteGitletDir = join(this.remoteDirPath, ".gitlet");
-        this.remoteStage = join(remoteGitletDir, "STAGE");
-        this.remoteCommits = join(remoteGitletDir, "COMMITS");
-        this.remoteBlobs = join(remoteGitletDir, "BLOBS");
+        this.remoteStage = join(remoteGitletDir, "stage");
+        this.remoteCommits = join(remoteGitletDir, "commits");
+        this.remoteBlobs = join(remoteGitletDir, "blobs");
         this.remoteHeadMapFile = join(remoteGitletDir, "headMap");
     }
 
@@ -238,14 +238,14 @@ public class RemoteRepo implements Serializable {
         Map<String, String> headBlobMap =
                 Repository.getCommitFromHash(headHash).getBlobMap();
         for (Map.Entry<String, String> blobPair : headBlobMap.entrySet()) {
-//            Path src = Paths.get(remoteBlobs.toString(), blobPair.getValue());
-//            Path dst = Paths.get(remoteDirPath, blobPair.getKey());
-            File src = join(remoteDir, ".gitlet", "blobs", blobPair.getValue());
-            File dst = join(remoteDir, blobPair.getKey());
-            System.out.println(src); // TODO: delete
-            System.out.println(dst); // TODO: delete
+            Path src = Paths.get(remoteBlobs.toString(), blobPair.getValue());
+            Path dst = Paths.get(remoteDirPath, blobPair.getKey());
+//            File src = join(remoteDir, ".gitlet", "blobs", blobPair.getValue());
+//            File dst = join(remoteDir, blobPair.getKey());
+//            System.out.println(src); // TODO: delete
+//            System.out.println(dst); // TODO: delete
             try { // TODO: modify
-                Files.copy(src.toPath(), dst.toPath(), REPLACE_EXISTING);
+                Files.copy(src, dst, REPLACE_EXISTING);
             } catch (IOException e) {
                 System.out.println(e); // TODO: delete
                 throw Utils.error("IOException during file copy operation.");
