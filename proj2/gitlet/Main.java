@@ -107,17 +107,22 @@ public class Main {
             case "add-remote" -> {
                 validateNumArgs("add-remote", args, 3);
                 Repository.checkForGitletDir();
-                Repository.addRemote(args[1], args[2]);
+                RemoteRepo.addRemote(args[1], args[2]);
             }
             case "rm-remote" -> {
                 validateNumArgs("rm-remote", args, 2);
                 Repository.checkForGitletDir();
-                Repository.rmRemote(args[1]);
+                RemoteRepo.rmRemote(args[1]);
             }
             case "push" -> {
                 validateNumArgs("push", args, 3);
                 Repository.checkForGitletDir();
-                Repository.push(args[1], args[2]);
+                RemoteRepo.push(args[1], args[2]);
+            }
+            case "fetch" -> {
+                validateNumArgs("fetch", args, 3);
+                Repository.checkForGitletDir();
+                RemoteRepo.fetch(args[1], args[2]);
             }
             default -> {
                 System.out.println("No command with that name exists.");
