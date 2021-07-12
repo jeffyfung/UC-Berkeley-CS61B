@@ -93,13 +93,12 @@ public class RemoteRepo implements Serializable {
 
         remote.pushHelper(remoteBranchName);
 
-//        writeRemoteNameToRemoteRepoMap(); TODO: confirm delete is ok
         writeRemoteHeadMap(remote);
     }
 
-    /** Fetch from remoteBranchName in remoteName to a local branch named
+    /** Fetch from remoteBranchName in remoteName to a local mirror branch named
      * "remoteName/remoteBranchName". */
-    static void fetch(String remoteName, String remoteBranchName) {
+    static void fetch(String remoteName, String remoteBranchName){
         importRemoteNameToRemoteRepoMap();
         RemoteRepo remote = checkForRemoteGitletDir(remoteName);
         importRemoteHeadMap(remote);
@@ -110,6 +109,14 @@ public class RemoteRepo implements Serializable {
 
         writeObject(join(Repository.GITLET_DIR, "headMap"),
                 (Serializable) Repository.headMap);
+    }
+
+    /** Fetch branch named "remoteName/remoteBranchName". Merge that mirror branch to current
+     * branch. */
+    static void pull(String remoteName, String remoteBranchName){
+        fetch(remoteName, remoteBranchName);
+        String mirrorBranchName = remoteName + "/" + remoteBranchName;
+        Repository.merge(mirrorBranchName);
     }
 
     /* ============================================================================================
@@ -131,7 +138,7 @@ public class RemoteRepo implements Serializable {
                 System.exit(0);
             }
             // get a list of commits on local branch that are in the future of remote branch head
-            scanOverBranch(localHeadHash, remoteBranchHeadHash);
+            scanOverBranch(localHeadHash, remoteBranchHeadHash, Commit.COMMITS);
             // check if remoteBranchHead is an ancestor of local head
             if (!commitTargets.remove(remoteBranchHeadHash)) {
                 System.out.println("Please pull down remote changes before pushing.");
@@ -151,37 +158,36 @@ public class RemoteRepo implements Serializable {
         String mirrorBranchHeadHash = Repository.headMap.get(mirrorBranchName);
         if (mirrorBranchHeadHash != null){
             String remoteBranchHeadHash = remoteHeadMap.get(remoteBranchName);
-            scanOverBranch(remoteBranchHeadHash, plainFilenamesIn(Commit.COMMITS));
+            scanOverBranch(remoteBranchHeadHash, plainFilenamesIn(Commit.COMMITS), remoteCommits);
         }
         copyCommitsBlobsAcrossBranches(remoteGitletDir, Repository.GITLET_DIR);
         // adjust head pointer
         Repository.headMap.put(mirrorBranchName, remoteHeadMap.get(remoteBranchName));
-        // TODO: no need to copy because mirror branch is not current branch
     }
 
     /** Using recursion, keep tracing back to parent commit hashes, starting from given hash to
      * initial commit. Terminate the recursion if hash is equal to referenceBranchHash. Return a
      * list of commit hashes traversed, which represents a list of commits on current branch that
      * are beyond the last common ancestor commit of current branch and reference branch. */
-    private void scanOverBranch(String hash, String referenceBranchHash) {
+    private void scanOverBranch(String hash, String referenceCommitHash, File commitsFolder) {
         if (hash == null) {
             return;
         }
         commitTargets.add(hash);
-        if (hash.equals(referenceBranchHash)) {
+        if (hash.equals(referenceCommitHash)) {
             return;
         }
-        Commit localCommitHash = readObject(join(Commit.COMMITS, hash), Commit.class);
-        scanOverBranch(localCommitHash.getParentCommitHash(), referenceBranchHash);
-        scanOverBranch(localCommitHash.getSecondParentCommitHash(), referenceBranchHash);
-        // TODO: can be improved to account for merge cases?
+        Commit commit = readObject(join(commitsFolder, hash), Commit.class);
+        scanOverBranch(commit.getParentCommitHash(), referenceCommitHash, commitsFolder);
+        scanOverBranch(commit.getSecondParentCommitHash(), referenceCommitHash, commitsFolder);
     }
 
     /** Using recursion, keep tracing back to parent commit hashes, starting from given hash to
      * initial commit. Terminate the recursion if hash is in the given listOfCommitHashes. Return a
      * list of commit hashes traversed, which represents a list of commits on current branch that
      * are beyond the last common ancestor commit of current branch and reference branch. */
-    private void scanOverBranch(String hash, List<String> referenceCommitHashes) {
+    private void scanOverBranch(String hash, List<String> referenceCommitHashes
+                                , File commitsFolder) {
         if (hash == null) {
             return;
         }
@@ -189,44 +195,9 @@ public class RemoteRepo implements Serializable {
         if (referenceCommitHashes.contains(hash)) {
             return;
         }
-        Commit localCommitHash = readObject(join(Commit.COMMITS, hash), Commit.class);
-        scanOverBranch(localCommitHash.getParentCommitHash(), referenceCommitHashes);
-        scanOverBranch(localCommitHash.getSecondParentCommitHash(), referenceCommitHashes);
-    }
-
-    /** Copy commit and blob files from local branch (starting from branch head) to
-     * given remote branch in remote dir. If commitTargets is provided, only copy commits
-     * included in commitTargets. Adjust the head pointer of remoteBranch to that of local current
-     * branch head. Return the hash of updated remote branch head. */
-    private String copyBranchLocalToRemote(String remoteBranchName) {
-        List<String> listOfCommits = (commitTargets.isEmpty())
-                ? plainFilenamesIn(Commit.COMMITS) : new ArrayList<>(commitTargets);
-        // copy commits from local to remote repo
-        for (String c : listOfCommits) {
-            File destinationCommit = join(remoteCommits, c);
-            if (!destinationCommit.exists()) {
-                try {
-                    Files.copy(join(Commit.COMMITS, c).toPath(), destinationCommit.toPath());
-                } catch (IOException e) {
-                    throw Utils.error("IOException during file copy operation.");
-                }
-            }
-        }
-        // copy blobs from local to remote repo
-        for (String blob : plainFilenamesIn(Repository.BLOBS)) {
-            File destinationBlob = join(remoteBlobs, blob);
-            if (!destinationBlob.exists()) {
-                try {
-                    Files.copy(join(Repository.BLOBS, blob).toPath(), destinationBlob.toPath());
-                } catch (IOException e) {
-                    throw Utils.error("IOException during file copy operation.");
-                }
-            }
-        }
-        // point remote branch head to local current branch head
-        String updatedHeadHash = Repository.getHeadHash();
-        remoteHeadMap.put(remoteBranchName, updatedHeadHash);
-        return updatedHeadHash;
+        Commit commit = readObject(join(commitsFolder, hash), Commit.class);
+        scanOverBranch(commit.getParentCommitHash(), referenceCommitHashes, commitsFolder);
+        scanOverBranch(commit.getSecondParentCommitHash(), referenceCommitHashes, commitsFolder);
     }
 
     /** Copy commit and blob files from folders in srcFolder to folders in dstFolder. If
@@ -276,6 +247,8 @@ public class RemoteRepo implements Serializable {
             }
         }
         remoteHeadMap.put(remoteBranchName, headHash);
+//        // TODO: confirm below => set remoteBranch to currenBranch in remoteRepo
+//        writeContents(remoteCurrentBranchFile, remoteBranchName);
     }
 
     /* ============================================================================================

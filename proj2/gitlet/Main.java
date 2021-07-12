@@ -124,6 +124,11 @@ public class Main {
                 Repository.checkForGitletDir();
                 RemoteRepo.fetch(args[1], args[2]);
             }
+            case "pull" -> {
+                validateNumArgs("pull", args, 3);
+                Repository.checkForGitletDir();
+                RemoteRepo.pull(args[1], args[2]);
+            }
             default -> {
                 System.out.println("No command with that name exists.");
                 System.exit(0);
