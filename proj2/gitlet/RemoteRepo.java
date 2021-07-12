@@ -247,7 +247,7 @@ public class RemoteRepo implements Serializable {
             }
         }
         remoteHeadMap.put(remoteBranchName, headHash);
-//        // TODO: confirm below => set remoteBranch to currenBranch in remoteRepo
+//        TODO: confirm below => set remoteBranch to currenBranch in remoteRepo
 //        writeContents(remoteCurrentBranchFile, remoteBranchName);
     }
 
