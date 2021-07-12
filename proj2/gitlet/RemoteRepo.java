@@ -239,9 +239,11 @@ public class RemoteRepo implements Serializable {
                 Repository.getCommitFromHash(headHash).getBlobMap();
         for (Map.Entry<String, String> blobPair : headBlobMap.entrySet()) {
             Path src = Paths.get(remoteBlobs.toString(), blobPair.getValue());
-            Path dest = Paths.get(remoteDirPath, blobPair.getKey());
+            Path dst = Paths.get(remoteDirPath, blobPair.getKey());
+            System.out.println(src);
+            System.out.println(dst);
             try {
-                Files.copy(src, dest, REPLACE_EXISTING);
+                Files.copy(src, dst, REPLACE_EXISTING);
             } catch (IOException e) {
                 throw Utils.error("IOException during file copy operation.");
             }
