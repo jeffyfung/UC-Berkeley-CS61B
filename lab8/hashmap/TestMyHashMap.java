@@ -158,4 +158,20 @@ public class TestMyHashMap {
         assertEquals(345, studentIDs.get("evil alan").intValue());
         assertEquals(studentIDs.get("evil alan"), studentIDs.get("alan"));
     }
+
+    @Test
+    public void iteratorTest(){
+        iteratorTest(new MyHashMap<>());
+    }
+
+    private void iteratorTest(MyHashMap<String, Integer> m){
+        for (int i = 0; i < 20; i++) {
+            m.put("hi" + i, 1);
+        }
+        int count = 0;
+        for (String key : m){
+            count += 1;
+        }
+        assertEquals(count, 20);
+    }
 }
