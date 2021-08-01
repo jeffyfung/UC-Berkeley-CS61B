@@ -15,16 +15,22 @@ import java.util.Random;
  */
 public class HexWorld {
     static final Random RANDOM = new Random(50000);
+    static final int RECURSION_DEPTH = 2;
+    static final int BORDER = 4;
     int hexSideLen;
     int worldWidth;
     int worldHeight;
+    int hexWidth;
+    int hexHeight;
     TETile[][] world;
 
     public HexWorld(int hexSideLen) {
         this.hexSideLen = hexSideLen;
-        this.worldWidth = 11 * hexSideLen - 6;
-        this.worldHeight = 10 * hexSideLen;
-        // initialize tiles
+        this.worldWidth = 11 * hexSideLen - 6 + BORDER;
+        this.worldHeight = 10 * hexSideLen + BORDER;
+        this.hexWidth = 3 * hexSideLen - 2;
+        this.hexHeight = 2 * hexSideLen;
+        // initialize world with empty tiles
         world = new TETile[worldWidth][worldHeight];
         for (int x = 0; x < worldWidth; x += 1) {
             for (int y = 0; y < worldHeight; y += 1) {
@@ -38,35 +44,36 @@ public class HexWorld {
     }
 
     public void tessellateHex() {
-        // start recursion at the bottom middle tile
-        int initX = 4 * hexSideLen - 2;
-        int initY = 0;
-        tessellateHex(initX, initY);
+        // start at the center tile
+        int initX = worldWidth / 2 - hexSideLen;
+        int initY = worldHeight / 2 - hexSideLen;
+        tessellateHex(initX, initY, 0, new Direction[]
+                {Direction.N, Direction.NW, Direction.SW, Direction.S, Direction.SE, Direction.NE});
     }
 
-    private void tessellateHex(int x, int y) {
-        System.out.println("start");
-        Hexagon hex = addHexagon(x, y, randomTile());
-        int leftHexX = hex.leftUpperEdge.x - 2 * hexSideLen + 1;
-        int leftHexY = hex.leftUpperEdge.y;
-        System.out.println("left -> (" + leftHexX + "," + leftHexY + ")");
-        if (leftHexX >= 0 && worldHeight - hex.leftUpperEdge.y >= hex.hexHeight) {
-            if (world[leftHexX][leftHexY].equals(Tileset.NOTHING)) {
-                System.out.println("left call");
-                tessellateHex(leftHexX, leftHexY);
+    private void tessellateHex(int x, int y, int recursionDepth, Direction[] dirList) {
+        addHexagon(x, y, randomTile());
+        if (recursionDepth >= RECURSION_DEPTH) {
+            return;
+        }
+        for (Direction dir : dirList) {
+            IndexPair newDrawingPoint = getNewDrawingPoint(dir, x, y);
+            if (world[newDrawingPoint.x + hexSideLen][newDrawingPoint.y].equals(Tileset.NOTHING)){
+                tessellateHex(newDrawingPoint.x, newDrawingPoint.y, recursionDepth + 1,
+                        Direction.adjacentDirList(dir));
             }
         }
-        int rightHexX = hex.rightUpperEdge.x - hexSideLen + 2;
-        int rightHexY = hex.rightUpperEdge.y;
-        System.out.println(hex.rightUpperEdge.x + ", " + hex.rightUpperEdge.y);
-        System.out.println("right -> (" + rightHexX + "," + rightHexY + ")");
-        if (rightHexX + hex.hexWidth <= worldWidth
-                && worldHeight - hex.rightUpperEdge.y >= hex.hexHeight) {
-            if (world[rightHexX + hex.hexWidth - 1][rightHexY].equals(Tileset.NOTHING)) {
-                System.out.println("right call");
-                tessellateHex(rightHexX, rightHexY);
-            }
-        }
+    }
+
+    private IndexPair getNewDrawingPoint(Direction dir, int x, int y) {
+        return switch (dir) {
+            case N -> new IndexPair(x, y + hexHeight);
+            case NW -> new IndexPair(x - 2 * hexSideLen + 1, y + hexSideLen);
+            case SW -> new IndexPair(x - 2 * hexSideLen + 1, y - hexSideLen);
+            case S -> new IndexPair(x, y - hexHeight);
+            case SE -> new IndexPair(x + 2 * hexSideLen - 1, y - hexSideLen);
+            case NE -> new IndexPair(x + 2 * hexSideLen - 1, y + hexSideLen);
+        };
     }
 
     private static TETile randomTile() {
@@ -80,26 +87,10 @@ public class HexWorld {
     }
 
     class Hexagon {
-//        List<IndexPair> tileIndices = new ArrayList<>();
-        int hexWidth;
-        int hexHeight;
-        IndexPair leftUpperEdge;
-        IndexPair rightUpperEdge;
-
-        // rectangular -> hexagon
         Hexagon(int x, int y, TETile tilePattern) {
-            hexWidth = 3 * hexSideLen - 2;
-            hexHeight = 2 * hexSideLen;
             for (int r = 0; r < hexHeight; r += 1) {
                 for (int c = findHexLeftBoundary(r); c < findHexRightBoundary(r); c += 1) {
                     world[x + c][y + r] = tilePattern;
-//                    tileIndices.add(new IndexPair(x + c, y + r));
-                    if (r == hexSideLen && c == 0) {
-                        leftUpperEdge = new IndexPair(x + c, y + r);
-                    }
-                    if (r == hexSideLen && c == hexWidth - 1) {
-                        rightUpperEdge = new IndexPair(x + c, y + r);
-                    }
                 }
             }
         }
@@ -119,6 +110,21 @@ public class HexWorld {
         }
     }
 
+    enum Direction {
+        N, NW, SW, S, SE, NE;
+
+        static Direction[] adjacentDirList(Direction dir) {
+            return switch (dir) {
+                case N -> new Direction[]{NW, N, NE};
+                case NW -> new Direction[]{SW, NW, N};
+                case SW -> new Direction[]{S, SW, NW};
+                case S -> new Direction[]{SE, S, SW};
+                case SE -> new Direction[]{NE, SE, S};
+                case NE -> new Direction[]{N, NE, SE};
+            };
+        }
+    }
+
     class IndexPair {
         int x;
         int y;
@@ -129,14 +135,13 @@ public class HexWorld {
         }
     }
 
-    // TODO: write a separate test class
     public static void main(String[] args) {
         int sideLen = 3;
-        // creat a world
+        // create a world
         HexWorld testWorld = new HexWorld(sideLen);
         // fill the world
         testWorld.tessellateHex();
-
+        // render the world
         TERenderer ter = new TERenderer();
         ter.initialize(testWorld.worldWidth, testWorld.worldHeight);
         ter.renderFrame(testWorld.world);
