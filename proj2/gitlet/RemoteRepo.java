@@ -240,20 +240,13 @@ public class RemoteRepo implements Serializable {
         for (Map.Entry<String, String> blobPair : headBlobMap.entrySet()) {
             Path src = Paths.get(remoteBlobs.toString(), blobPair.getValue());
             Path dst = Paths.get(remoteDirPath, blobPair.getKey());
-//            File src = join(remoteDir, ".gitlet", "blobs", blobPair.getValue());
-//            File dst = join(remoteDir, blobPair.getKey());
-//            System.out.println(src); // TODO: delete
-//            System.out.println(dst); // TODO: delete
-            try { // TODO: modify
+            try {
                 Files.copy(src, dst, REPLACE_EXISTING);
             } catch (IOException e) {
-                System.out.println(e); // TODO: delete
                 throw Utils.error("IOException during file copy operation.");
             }
         }
         remoteHeadMap.put(remoteBranchName, headHash);
-//        TODO: confirm below => set remoteBranch to currenBranch in remoteRepo
-//        writeContents(remoteCurrentBranchFile, remoteBranchName);
     }
 
     /* ============================================================================================
