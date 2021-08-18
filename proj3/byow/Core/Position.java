@@ -11,21 +11,11 @@ public class Position {
         this.y = y;
     }
 
-    /** Returns 1 if the given array of position forms a vertical line, or 2 if a horizontal line
-     * is formed. Returns 0 if neither a vertical nor horizontal line is formed.
-     * @param line A array of adjacent positions
-     * @return 0, 1 or 2
-     */
-    static int checkOrientationOfLine(LinkedList<Position> line) {
-        // TODO: change all lines to LinkedList<Position> ???
-        if (line.get(0).x == line.get(line.size() - 1).x) {
-            return 1;
+    static Double dist(Position pos1, Position pos2) {
+        if (pos1 == null || pos2 == null) {
+            return null;
         }
-        else if (line.get(0).y == line.get(line.size() - 1).y) {
-            return 2;
-        }
-        else {
-            return 0;
-        }
+        return Math.sqrt((pos1.x - pos2.x) * (pos1.x - pos2.x)
+                + (pos1.y - pos2.y) * (pos1.y - pos2.y));
     }
 }

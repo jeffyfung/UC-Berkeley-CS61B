@@ -9,10 +9,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import static byow.Core.Room.*;
+
 public class WorldMap {
     static final Random RANDOM = new Random(1000);
-    static final int worldWidth = 40;
-    static final int worldHeight = 40;
+    static final int worldWidth = 50;
+    static final int worldHeight = 50;
     TETile[][] world;
 
     public WorldMap() {
@@ -24,20 +26,17 @@ public class WorldMap {
         }
     }
 
-    public void drawRoomsAndHallways(){
-        LinkedList<Position> line = new LinkedList<>();
-        for (int i = 0; i < 5; i += 1) {
-            line.add(new Position(10 + i, 10));
-        }
-        Room.buildRoom(world, line, RANDOM);
-    }
-
     public static void main(String[] args){
         WorldMap testWorld = new WorldMap();
-        testWorld.drawRoomsAndHallways();
+        buildRooms(testWorld);
+//        buildHallways(testWorld, rooms);
 
         TERenderer ter = new TERenderer();
         ter.initialize(worldWidth, worldHeight);
         ter.renderFrame(testWorld.world);
+    }
+
+    public static void drawHallways(WorldMap map, List<Room> rooms) {
+        return;
     }
 }
