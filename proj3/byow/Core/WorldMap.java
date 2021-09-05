@@ -12,7 +12,7 @@ import java.util.Random;
 import static byow.Core.Room.*;
 
 public class WorldMap {
-    static final Random RANDOM = new Random(1000);
+    static final Random RANDOM = new Random(100); // 1000
     static final int worldWidth = 50;
     static final int worldHeight = 50;
     TETile[][] world;
@@ -36,7 +36,7 @@ public class WorldMap {
         ter.renderFrame(testWorld.world);
     }
 
-    public static void drawHallways(WorldMap map, List<Room> rooms) {
-        return;
-    }
+    // public static void drawHallways(WorldMap map, List<Room> rooms) {
+    //     return;
+    // }
 }
