@@ -26,11 +26,6 @@ public class TestRoom {
         }
         KdTree.resetPartitionedSpace();
         assertEquals(1, nullCounter);
-
-        // visualize altered tiles
-        TERenderer ter = new TERenderer();
-        ter.initialize(WorldMap.worldWidth, WorldMap.worldHeight);
-        ter.renderFrame(testWorld.world);
     }
 
 }

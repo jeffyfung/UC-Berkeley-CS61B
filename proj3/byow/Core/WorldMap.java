@@ -4,15 +4,12 @@ import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 
 import static byow.Core.Room.*;
 
 public class WorldMap {
-    static final Random RANDOM = new Random(100); // 1000
+    static final Random RANDOM = new Random(120); // 1000
     static final int worldWidth = 50;
     static final int worldHeight = 50;
     TETile[][] world;
