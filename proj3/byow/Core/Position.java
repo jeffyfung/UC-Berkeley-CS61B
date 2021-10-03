@@ -14,8 +14,8 @@ public class Position {
         if (pos1 == null || pos2 == null) {
             return null;
         }
-        return Math.sqrt((pos1.xy[0] - pos2.xy[0] * (pos1.xy[0] - pos2.xy[0])
-                + (pos1.xy[1] - pos2.xy[1]) * (pos1.xy[1] - pos2.xy[1])));
+        return Math.sqrt((pos1.xy[0] - pos2.xy[0]) * (pos1.xy[0] - pos2.xy[0])
+                + (pos1.xy[1] - pos2.xy[1]) * (pos1.xy[1] - pos2.xy[1]));
     }
 
     /** Calculate the area inside a rectangle bounded by the give lowerLeftCorner and
@@ -43,5 +43,13 @@ public class Position {
         }
         Position pos = (Position) o;
         return this.xy[0] == pos.xy[0] && this.xy[1] == pos.xy[1];
+    }
+
+    public int getX() {
+        return xy[0];
+    }
+
+    public int getY() {
+        return xy[1];
     }
 }
