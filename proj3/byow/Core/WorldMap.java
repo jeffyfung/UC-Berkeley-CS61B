@@ -10,7 +10,7 @@ import java.util.Random;
 import static byow.Core.Room.*;
 
 public class WorldMap {
-    static final Random RANDOM = new Random(5); // 120
+    static final Random RANDOM = new Random(120); // 120
     static final int worldWidth = 50;
     static final int worldHeight = 50;
     TETile[][] tiles;

@@ -20,7 +20,7 @@ public class TileGraph extends EdgeWeightedGraph {
         this.roomsVertices = new ArrayList<>();
         this.vInstantiated = new boolean[V()];
 
-        addEdges(0, 1, V()); // TODO: confirm weight = 1?
+        addEdges(0, 1, V());
         for (int i = 0; i < rooms.size(); i += 1) {
             Room rm = rooms.get(i);
             Position lowerLeft = rm.lowerLeft;
@@ -40,7 +40,6 @@ public class TileGraph extends EdgeWeightedGraph {
             }
             roomsVertices.add(rv);
         }
-        System.out.println("TileGraph initiated");
     }
 
     /**
@@ -73,7 +72,6 @@ public class TileGraph extends EdgeWeightedGraph {
         if (path.size() == 0) {
             return null;
         }
-        // TODO: need to account for twisting path
         return buildHallway(path, srcRoomVertices, tgtRoomVertices, srcRoom, tgtRoom);
     }
 
@@ -101,42 +99,25 @@ public class TileGraph extends EdgeWeightedGraph {
 
     private Hallway buildHallway(List<Integer> path, Set<Integer> srcRoomVertices,
                                         Set<Integer> tgtRoomVertices, Room srcRoom, Room tgtRoom) {
+
+        Map<Integer, int[]> directions = new HashMap<>();
+        directions.put(1, new int[] {mapWidth , -mapWidth});
+        directions.put(mapWidth, new int[] {-1 , 1});
+        directions.put(-1, new int[] {-mapWidth, mapWidth});
+        directions.put(-mapWidth, new int[] {1, -1});
+
         int[] indices = truncatePath(path, srcRoomVertices, tgtRoomVertices);
         int startVIdx = indices[0];
         int lastVIdx = indices[1];
+        Hallway h = new Hallway(new HashSet<>(), new HashSet<>());
 
-        List<Position> truncatedPath = new LinkedList<>();
-        List<Position> walls = new LinkedList<>();
-        int translator = getTranslator(srcRoom.center, tgtRoom.center);
-        for (int j = startVIdx; j <= lastVIdx; j += 1) {
-            int v = path.get(j);
-            if (j != startVIdx && j != lastVIdx) {
-                // exclude vertices at the ends of path from inaccessibleAreas
-                existingHallways.add(v);
-            }
-            Position pos = convertVToArrayPos(v);
-            truncatedPath.add(pos);
-
-            Position rTranslatedPos;
-            Position lTranslatedPos;
-            if (translator == 2) {
-                rTranslatedPos = new Position(pos.getX(), pos.getY() + 1);
-                lTranslatedPos = new Position(pos.getX(), pos.getY() - 1);
-            } else {
-                rTranslatedPos = new Position(pos.getX() + 1, pos.getY() + translator);
-                lTranslatedPos = new Position(pos.getX() - 1, pos.getY() - translator);
-            }
-
-            if (!srcRoom.isPosWithinRoom(rTranslatedPos) && !tgtRoom.isPosWithinRoom(rTranslatedPos)) {
-                walls.add(rTranslatedPos);
-                existingHallways.add(convertArrayPosToV(rTranslatedPos));
-            }
-            if (!srcRoom.isPosWithinRoom(lTranslatedPos) && !tgtRoom.isPosWithinRoom(lTranslatedPos)) {
-                walls.add(lTranslatedPos);
-                existingHallways.add(convertArrayPosToV(lTranslatedPos));
-            }
+        for (int j = startVIdx + 1; j <= lastVIdx + 1; j +=1 ) {
+            int v = j == lastVIdx + 1 ? -1 : path.get(j);
+            int prevV = path.get(j - 1);
+            int prevPrevV = j == startVIdx + 1 ? -1 : path.get(j - 2);
+            h = buildHallwayHelper(v, prevV, prevPrevV, directions, srcRoom, tgtRoom, h);
         }
-        return new Hallway(truncatedPath, walls);
+        return h;
     }
 
     private int[] truncatePath(List<Integer> path, Set<Integer> srcRoomVertices,
@@ -174,21 +155,45 @@ public class TileGraph extends EdgeWeightedGraph {
                 && !(roomVertices.contains(v + mapWidth) && roomVertices.contains(v - mapWidth)));
     }
 
-    /** Determine the relative locations of pos1 and pos2. Return 1 if the higher position is
-     * located more to the left, -1 if the higher position is located more to the right. Return 0
-     * if the positions are collinear. */
-    private int getTranslator(Position pos1, Position pos2) {
-        int pos1x = pos1.getX();
-        int pos1y = pos1.getY();
-        int pos2x = pos2.getX();
-        int pos2y = pos2.getY();
-        if (pos1y == pos2y) {
-            return 2;
-        } else if (pos1x == pos2x) {
-            return 0;
+    private Hallway buildHallwayHelper(int v, int prevV, int prevPrevV,
+                                              Map<Integer, int[]> directions, Room srcRoom,
+                                              Room tgtRoom, Hallway h) {
+        Set<Position> truncatedPath = h.getPath();
+        Set<Position> walls = h.getWalls();
+        List<Integer> wallsInScope = new LinkedList<>();
+
+        int deltaV = v - prevV;
+        int prevDeltaV = prevV - prevPrevV;
+        if (v == -1) {
+            wallsInScope.add(prevV + directions.get(prevDeltaV)[0]);
+            wallsInScope.add(prevV + directions.get(prevDeltaV)[1]);
+            wallsInScope.add(prevV + prevDeltaV + directions.get(prevDeltaV)[0]);
+            wallsInScope.add(prevV + prevDeltaV + directions.get(prevDeltaV)[1]);
+        } else if (prevPrevV == -1 || deltaV == prevDeltaV) {
+            wallsInScope.add(prevV + directions.get(deltaV)[0]);
+            wallsInScope.add(prevV + directions.get(deltaV)[1]);
+            if (prevPrevV == -1) {
+                wallsInScope.add(prevV - deltaV + directions.get(deltaV)[0]);
+                wallsInScope.add(prevV - deltaV + directions.get(deltaV)[1]);
+            }
         } else {
-            return ((pos1y > pos2y && pos1x < pos2x) || (pos2y > pos1y && pos2x < pos1x)) ? 1 : -1;
+                wallsInScope.add(prevV - deltaV);
+                wallsInScope.add(prevV + prevDeltaV);
+                wallsInScope.add(prevV + prevDeltaV - deltaV);
         }
+        for (int wall : wallsInScope) {
+            Position wallPos = convertVToArrayPos(wall);
+            if (!srcRoom.isPosWithinRoom(wallPos) && !tgtRoom.isPosWithinRoom(wallPos)) {
+                walls.add(wallPos);
+                existingHallways.add(wall);
+            }
+        }
+        Position pathPos = convertVToArrayPos(prevV);
+        if (!srcRoom.isPosWithinRoom(pathPos) && !tgtRoom.isPosWithinRoom(pathPos)) {
+            existingHallways.add(prevV);
+        }
+        truncatedPath.add(pathPos);
+        return new Hallway(truncatedPath, walls);
     }
 
     private int convertArrayPosToV(int x, int y) {

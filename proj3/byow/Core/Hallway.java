@@ -1,21 +1,21 @@
 package byow.Core;
 
-import java.util.List;
+import java.util.Set;
 
 public class Hallway {
-    private List<Position> path;
-    private List<Position> walls;
+    private Set<Position> path;
+    private Set<Position> walls;
 
-    Hallway(List<Position> path, List<Position> walls) {
+    Hallway(Set<Position> path, Set<Position> walls) {
         this.path = path;
         this.walls = walls;
     }
 
-    List<Position> getPath() {
+    Set<Position> getPath() {
         return path;
     }
 
-    List<Position> getWalls() {
+    Set<Position> getWalls() {
         return walls;
     }
 }

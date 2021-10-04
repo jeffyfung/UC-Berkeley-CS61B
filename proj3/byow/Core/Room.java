@@ -8,7 +8,7 @@ import java.util.*;
 public class Room {
     static final TETile patternRoomWalls = Tileset.WALL;
     static final TETile patternRoomFloor = Tileset.FLOOR;
-    static final TETile patternHallwayWalls = Tileset.WALL; // WATER
+    static final TETile patternHallwayWalls = Tileset.GRASS;
     static final TETile patternHallwayFloor = Tileset.SAND;
     Position lowerLeft;
     Position upperRight;
@@ -81,22 +81,32 @@ public class Room {
             // 1) represents room center (cross check with rooms.get(idx).center)
             // 2) not connected to srcV (& != srcV) (ds.isConnected())
             // 3) closest to srcV
+            // for (int idx = 0; i < rooms.size(); i += 1) {
+            //      if (i != srcRoomIdx && !roomDS.isConnected(srcRoomIdx, i)) {
+            //          Position rmCenter = rooms.get(i).center;
+            //          int rmCenterV = g.convertArrayPosToV(rmCenter);
+            //          dist = g.distTo(rmCenterV)???
+            //          if (minDist = DOUBLE.POSITIVE.INFINITY || dist < minDist) {
+            //              minDist = dist;
+            //              tgtRoomV = rmCenterV; // srcV? tgtV?
             // -> connect srcV to tgtV
             // note: stick with the coded slower method first (for testing purpose)
-            Hallway hallway = g.connect(srcRoomIdx, tgtRoomIdx);
+            Hallway h = g.connect(srcRoomIdx, tgtRoomIdx);
             //             for testing purpose
-            if (srcRoomIdx == 6 && tgtRoomIdx == 12) {
-                drawRoom(world.tiles, rooms.get(srcRoomIdx), Tileset.WATER, Tileset.FLOOR);
-                drawRoom(world.tiles, rooms.get(tgtRoomIdx), Tileset.FLOWER, Tileset.FLOOR);
-                return;
-            }
+//            if (srcRoomIdx == 9 && tgtRoomIdx == 6) {
+//                drawRoom(world.tiles, rooms.get(srcRoomIdx), Tileset.WATER, Tileset.FLOOR);
+//                drawRoom(world.tiles, rooms.get(tgtRoomIdx), Tileset.FLOWER, Tileset.FLOOR);
+//                return;
+//            }
             // continue to next loneliest room if no viable route existing srcV and tgtV
-            if (hallway != null) {
+            if (h != null) {
                 roomsDS.connect(srcRoomIdx, tgtRoomIdx);
-                drawPath(world.tiles, hallway.getWalls(), patternHallwayWalls);
-                drawPath(world.tiles, hallway.getPath(), patternHallwayFloor); // switch around?
+                drawPath(world.tiles, h.getPath(), patternHallwayFloor); // switch around?
+                drawPath(world.tiles, h.getWalls(), patternHallwayWalls);
                 srcRoomIdx = roomsDS.getLoneliestElement();
             } else {
+//                System.out.println(String.format("skip %d -> %d because it aint feasible",
+//                        srcRoomIdx, tgtRoomIdx));
                 srcRoomIdx = roomsDS.getNextLoneliestElement(srcRoomIdx);
             }
         }
@@ -181,7 +191,7 @@ public class Room {
     }
 
     /** Change tile pattern along given path on tiles. */
-    static TETile[][] drawPath(TETile[][] tiles, List<Position> path, TETile hallwayPattern) {
+    static TETile[][] drawPath(TETile[][] tiles, Set<Position> path, TETile hallwayPattern) {
         for (Position pos : path) {
             tiles[pos.getX()][pos.getY()] = hallwayPattern;
         }
