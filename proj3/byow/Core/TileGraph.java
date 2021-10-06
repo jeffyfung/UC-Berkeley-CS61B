@@ -1,19 +1,15 @@
 package byow.Core;
 
-import byow.TileEngine.TETile;
 import edu.princeton.cs.algs4.Edge;
 import edu.princeton.cs.algs4.EdgeWeightedGraph;
 
 import java.util.*;
 
-import static byow.Core.WorldMap.worldHeight;
-import static byow.Core.WorldMap.worldWidth;
-
 public class TileGraph extends EdgeWeightedGraph {
-    /** Width of the world. */
-    private int mapWidth;
-    /** Width of the world. */
-    private int mapHeight;
+//    /** Width of the world. */
+//    private int mapWidth;
+//    /** Width of the world. */
+//    private int mapHeight;
     /** List of Room objects. */
     private ArrayList<Room> rooms;
     /** List of vertices on perimeters of each room. */
@@ -23,10 +19,10 @@ public class TileGraph extends EdgeWeightedGraph {
     /** Set of vertices locating on hallways, including paths and walls. */
     private HashSet<Integer> existingHallways = new HashSet<>();
 
-    TileGraph(TETile[][] tiles, ArrayList<Room> rooms) {
-        super(worldWidth * worldHeight);
-        this.mapWidth = worldWidth;
-        this.mapHeight = worldHeight;
+    TileGraph(ArrayList<Room> rooms) {
+        super(Engine.WORLD_WIDTH * Engine.WORLD_HEIGHT);
+//        this.mapWidth = Engine.WORLD_WIDTH;
+//        this.mapHeight = Engine.WORLD_HEIGHT;
         this.rooms = rooms;
         this.roomsVertices = new ArrayList<>();
         this.vInstantiated = new boolean[V()];
@@ -93,13 +89,13 @@ public class TileGraph extends EdgeWeightedGraph {
         if (vInstantiated[v]) {
             return;
         }
-        if ((v + 1) / mapWidth == v / mapWidth) {
+        if ((v + 1) / Engine.WORLD_WIDTH == v / Engine.WORLD_WIDTH) {
             addEdge(new Edge(v, v + 1, weight));
             addEdges(v + 1, weight, totalTiles);
         }
-        if (v + mapWidth < totalTiles) {
-            addEdge(new Edge(v, v + mapWidth, weight));
-            addEdges(v + mapWidth, weight, totalTiles);
+        if (v + Engine.WORLD_WIDTH < totalTiles) {
+            addEdge(new Edge(v, v + Engine.WORLD_WIDTH, weight));
+            addEdges(v + Engine.WORLD_WIDTH, weight, totalTiles);
         }
         vInstantiated[v] = true;
     }
@@ -107,7 +103,7 @@ public class TileGraph extends EdgeWeightedGraph {
     /** Return the given vertex and its immediately adjacent vertices in all directions all
      * together in a set. */
     static public Set<Integer> getVPeriphery(TileGraph g, int v) {
-        return Set.of(v, v - 1, v + 1, v - g.mapWidth, v + g.mapWidth);
+        return Set.of(v, v - 1, v + 1, v - Engine.WORLD_WIDTH, v + Engine.WORLD_WIDTH);
     }
 
     /** Process the given path of vertices, which connects source room to target room, in 2 ways:
@@ -118,10 +114,10 @@ public class TileGraph extends EdgeWeightedGraph {
                                         Set<Integer> tgtRoomVertices, Room srcRoom, Room tgtRoom) {
 
         Map<Integer, int[]> directions = new HashMap<>();
-        directions.put(1, new int[] {mapWidth , -mapWidth});
-        directions.put(mapWidth, new int[] {-1 , 1});
-        directions.put(-1, new int[] {-mapWidth, mapWidth});
-        directions.put(-mapWidth, new int[] {1, -1});
+        directions.put(1, new int[] {Engine.WORLD_WIDTH , -Engine.WORLD_WIDTH});
+        directions.put(Engine.WORLD_WIDTH, new int[] {-1 , 1});
+        directions.put(-1, new int[] {-Engine.WORLD_WIDTH, Engine.WORLD_WIDTH});
+        directions.put(-Engine.WORLD_WIDTH, new int[] {1, -1});
 
         int[] indices = truncatePath(path, srcRoomVertices, tgtRoomVertices);
         int startVIdx = indices[0];
@@ -173,7 +169,8 @@ public class TileGraph extends EdgeWeightedGraph {
                     "boundaries of the room", v));
         }
         return (!(roomVertices.contains(v - 1) && roomVertices.contains(v + 1))
-                && !(roomVertices.contains(v + mapWidth) && roomVertices.contains(v - mapWidth)));
+                && !(roomVertices.contains(v + Engine.WORLD_WIDTH)
+                && roomVertices.contains(v - Engine.WORLD_WIDTH)));
     }
 
     /** Return a hallway with 2 updated sequences of tiles representing a path from source room
@@ -223,22 +220,22 @@ public class TileGraph extends EdgeWeightedGraph {
     /** Check if the given vertex is located on the boundary of the graph. */
     boolean isVertexOnGraphBoundary(int v) {
         Position pos = convertVToArrayPos(v);
-        return pos.getX() == 0 || pos.getX() == mapWidth - 1
-                || pos.getY() == 0 || pos.getY() == mapHeight - 1;
+        return pos.getX() == 0 || pos.getX() == Engine.WORLD_WIDTH - 1
+                || pos.getY() == 0 || pos.getY() == Engine.WORLD_HEIGHT - 1;
     }
 
     /** Convert a Position object to corresponding vertex. */
     private int convertArrayPosToV(int x, int y) {
-        return x + mapWidth * y;
+        return x + Engine.WORLD_WIDTH * y;
     }
 
     /** Convert a Position object to corresponding vertex. */
     private int convertArrayPosToV(Position pos) {
-        return pos.getX() + mapWidth * pos.getY();
+        return pos.getX() + Engine.WORLD_WIDTH * pos.getY();
     }
 
     /** Convert a corresponding vertex to Position object. */
     private Position convertVToArrayPos(int v) {
-        return new Position(v % mapWidth, v / mapWidth);
+        return new Position(v % Engine.WORLD_WIDTH, v / Engine.WORLD_WIDTH);
     }
 }

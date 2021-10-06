@@ -116,7 +116,7 @@ public class KdTree {
 
         EmptyLeafExtensionSpace() {
             this.lowerLeft = new Position(0, 0);
-            this.upperRight = new Position(WorldMap.worldWidth - 1, WorldMap.worldHeight - 1);
+            this.upperRight = new Position(Engine.WORLD_WIDTH - 1, Engine.WORLD_HEIGHT - 1);
         }
 
         EmptyLeafExtensionSpace(Position lowerLeft, Position upperRight) {
@@ -134,7 +134,7 @@ public class KdTree {
             } else {
                 Position newUpperRight = new Position(upperRight.xy[0], upperRight.xy[1]);
                 newUpperRight.xy[axis] = pos.xy[axis];
-                // TODO: clarify : no need to -1; just exclude upper bound when sampling from space
+                // clarify : no need to -1; just exclude upper bound when sampling from space
                 return new EmptyLeafExtensionSpace(lowerLeft, newUpperRight);
             }
         }

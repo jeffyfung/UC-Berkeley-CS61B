@@ -23,10 +23,10 @@ public class Room {
 
     /** Return a list of Room objects. Each room is randomly sampled from a space partitioned
      * by leaf nodes of a random modified KdTree. */
-    public static ArrayList<Room> buildRooms(WorldMap world) {
+    public static ArrayList<Room> buildRooms(Engine world) {
         // generate a random sequence of Position objects, limited by range of world map
-        List<Position> posSeq = generateRandomPos(WorldMap.worldWidth, WorldMap.worldHeight,
-                WorldMap.RANDOM);
+        List<Position> posSeq = generateRandomPos(Engine.WORLD_WIDTH, Engine.WORLD_HEIGHT,
+                world.random);
         // build KdTree from the random sequence
         KdTree kdt = null;
         for (Position pos : posSeq) {
@@ -44,7 +44,7 @@ public class Room {
 //        LinkedList<Position> partitionUR = new LinkedList<>();
         for (KdTree.EmptyLeafExtensionSpace partition : kdt.getPartitionedSpace()) {
             Room room = sampleRoomFromPartition(partition, false, 0
-                    , WorldMap.RANDOM);
+                    , world.random);
 //            partitionLL.add(partition.lowerLeft);
 //            partitionUR.add(partition.upperRight);
             if (room != null) {
@@ -66,9 +66,9 @@ public class Room {
      *  approximately closest room until all rooms are connected. Skip a candidate pair of
      *  connection if a connection cannot be formed between the pair of rooms. Draw the resulted
      *  hallway during each successful connection. */
-    public static void connectRooms(WorldMap world, ArrayList<Room> rooms) { ;
+    public static void connectRooms(Engine world, ArrayList<Room> rooms) { ;
         WQUDisjointSet roomsDS = new WQUDisjointSet(rooms);
-        TileGraph g = new TileGraph(world.tiles, rooms);
+        TileGraph g = new TileGraph(rooms);
         int srcRoomIdx = 0;
         while (!roomsDS.connectedToAllObjects(srcRoomIdx)) {
             int tgtRoomIdx = getApproxAdjacUnconnectedRoom(roomsDS, rooms, srcRoomIdx);

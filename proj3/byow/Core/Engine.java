@@ -1,13 +1,33 @@
 package byow.Core;
 
+import byow.Input.InputSource;
+import byow.Input.StringInputDevice;
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
+import byow.TileEngine.Tileset;
+
+import java.util.ArrayList;
+import java.util.Random;
+
+import static byow.Core.Room.buildRooms;
+import static byow.Core.Room.connectRooms;
 
 public class Engine {
     TERenderer ter = new TERenderer();
-    /* Feel free to change the width and height. */
-    public static final int WIDTH = 80;
-    public static final int HEIGHT = 30;
+    Random random;
+    public static final int WORLD_WIDTH = 75;
+    public static final int WORLD_HEIGHT = 30;
+    TETile[][] tiles;
+
+    /** Initial the world with empty tiles. */
+    public Engine() {
+        this.tiles = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
+        for (int x = 0; x < WORLD_WIDTH; x += 1) {
+            for (int y = 0; y < WORLD_HEIGHT; y += 1) {
+                tiles[x][y] = Tileset.NOTHING;
+            }
+        }
+    }
 
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
@@ -38,15 +58,48 @@ public class Engine {
      * @return the 2D TETile[][] representing the state of the world
      */
     public TETile[][] interactWithInputString(String input) {
-        // TODO: Fill out this method so that it run the engine using the input
-        // passed in as an argument, and return a 2D tile representation of the
-        // world that would have been drawn if the same inputs had been given
-        // to interactWithKeyboard().
-        //
-        // See proj3.byow.InputDemo for a demo of how you can make a nice clean interface
-        // that works for many different input types.
+        InputSource inputSource = new StringInputDevice(input.toUpperCase());
+        Integer seed = null;
+        boolean startSeed = false;
+        while (inputSource.possibleNextInput()) {
+            char c = inputSource.getNextKey();
+            if (c == 'N') {
+                startSeed = true;
+                continue;
+            } else if (c == 'S') {
+                startSeed = false;
+            }
+            // other inputs e.g. L, Q, S etc
+            if (startSeed) {
+                Integer num = Character.getNumericValue(c);
+                seed = seed == null ? num : seed * 10 + num;
+            }
+        }
+        if (startSeed || seed == null) {
+            System.out.println("Input must contain a positive integer seed phases bounded by N " +
+                    "and S, for example, N123S. Please re-enter.");
+            return null;
+        }
+        this.random = new Random(seed);
 
-        TETile[][] finalWorldFrame = null;
-        return finalWorldFrame;
+        ArrayList<Room> rooms = buildRooms(this);
+        connectRooms(this, rooms);
+//        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
+//        ter.renderFrame(tiles);
+        return tiles;
     }
+
+    public String toString() {
+        return TETile.toString(tiles);
+    }
+
+    public static void main(String[] args){
+        Engine test = new Engine();
+        ArrayList<Room> rooms = buildRooms(test);
+        connectRooms(test, rooms);
+
+        test.ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
+        test.ter.renderFrame(test.tiles);
+    }
+
 }

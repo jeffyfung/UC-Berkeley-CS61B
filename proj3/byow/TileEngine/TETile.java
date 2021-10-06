@@ -1,11 +1,11 @@
 package byow.TileEngine;
 
-import java.awt.Color;
+import byow.Core.RandomUtils;
+import edu.princeton.cs.introcs.StdDraw;
+
+import java.awt.*;
 import java.util.Arrays;
 import java.util.Random;
-
-import edu.princeton.cs.introcs.StdDraw;
-import byow.Core.RandomUtils;
 
 /**
  * The TETile object is used to represent a single tile in your world. A 2D array of tiles make up a
@@ -165,7 +165,7 @@ public class TETile {
                 }
                 sb.append(world[x][y].character());
             }
-            sb.append('\n');
+            sb.append("\n\t\t");
         }
         return sb.toString();
     }

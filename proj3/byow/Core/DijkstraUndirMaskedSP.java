@@ -58,7 +58,6 @@ public class DijkstraUndirMaskedSP {
     private void relax(Edge e, int v, Set<Integer> exception) {
         int w = e.other(v);
         Set<Integer> wPeriphery = TileGraph.getVPeriphery(g, v);
-        // TODO: debug - skip if v is located on the periphery of worldMap
         if (!g.isVertexOnGraphBoundary(v) && Collections.disjoint(wPeriphery, exception)
                 && distTo[w] > distTo[v] + e.weight()) {
             distTo[w] = distTo[v] + e.weight();
