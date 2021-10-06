@@ -1,8 +1,7 @@
 package byow.Core;
 
-import java.util.LinkedList;
-
 public class Position {
+    /** A size 2 array tracking the x and y coordinates of the position. */
     int[] xy;
 
     public Position(int x, int y) {

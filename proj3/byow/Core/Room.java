@@ -8,8 +8,8 @@ import java.util.*;
 public class Room {
     static final TETile patternRoomWalls = Tileset.WALL;
     static final TETile patternRoomFloor = Tileset.FLOOR;
-    static final TETile patternHallwayWalls = Tileset.GRASS;
-    static final TETile patternHallwayFloor = Tileset.SAND;
+    static final TETile patternHallwayWalls = Tileset.WALL;
+    static final TETile patternHallwayFloor = Tileset.FLOOR;
     Position lowerLeft;
     Position upperRight;
     Position center;
@@ -62,35 +62,21 @@ public class Room {
         return rooms;
     }
 
-    // TODO: add descriptions
-    public static void connectRooms(WorldMap world, ArrayList<Room> rooms) {
-        System.out.println("No. of Rooms: " + rooms.size());
+    /** Connect all rooms by repeatedly finding the least connected room and connecting it to the
+     *  approximately closest room until all rooms are connected. Skip a candidate pair of
+     *  connection if a connection cannot be formed between the pair of rooms. Draw the resulted
+     *  hallway during each successful connection. */
+    public static void connectRooms(WorldMap world, ArrayList<Room> rooms) { ;
         WQUDisjointSet roomsDS = new WQUDisjointSet(rooms);
         TileGraph g = new TileGraph(world.tiles, rooms);
-        // start with a (random / nearest to 0) room and connect to the closest room
-        // find room value nearest to 0; return idx value of loneliest room
         int srcRoomIdx = 0;
         while (!roomsDS.connectedToAllObjects(srcRoomIdx)) {
             int tgtRoomIdx = getApproxAdjacUnconnectedRoom(roomsDS, rooms, srcRoomIdx);
             // for test purpose only
             System.out.println("source room: " + srcRoomIdx);
             System.out.println("adjacent unconnected room: " + tgtRoomIdx);
-            //
-            // TODO: weird to use dijkstra if the target is known already
-            // alternative solution: compute Dijkstra and loop through distTo to find the tgtV that:
-            // 1) represents room center (cross check with rooms.get(idx).center)
-            // 2) not connected to srcV (& != srcV) (ds.isConnected())
-            // 3) closest to srcV
-            // for (int idx = 0; i < rooms.size(); i += 1) {
-            //      if (i != srcRoomIdx && !roomDS.isConnected(srcRoomIdx, i)) {
-            //          Position rmCenter = rooms.get(i).center;
-            //          int rmCenterV = g.convertArrayPosToV(rmCenter);
-            //          dist = g.distTo(rmCenterV)???
-            //          if (minDist = DOUBLE.POSITIVE.INFINITY || dist < minDist) {
-            //              minDist = dist;
-            //              tgtRoomV = rmCenterV; // srcV? tgtV?
-            // -> connect srcV to tgtV
-            // note: stick with the coded slower method first (for testing purpose)
+            // TODO: alternative method for calculating tgtRoom e.g. use Dijkstra's ? (inaccessible)
+
             Hallway h = g.connect(srcRoomIdx, tgtRoomIdx);
             //             for testing purpose
 //            if (srcRoomIdx == 9 && tgtRoomIdx == 6) {
@@ -98,15 +84,12 @@ public class Room {
 //                drawRoom(world.tiles, rooms.get(tgtRoomIdx), Tileset.FLOWER, Tileset.FLOOR);
 //                return;
 //            }
-            // continue to next loneliest room if no viable route existing srcV and tgtV
             if (h != null) {
                 roomsDS.connect(srcRoomIdx, tgtRoomIdx);
-                drawPath(world.tiles, h.getPath(), patternHallwayFloor); // switch around?
-                drawPath(world.tiles, h.getWalls(), patternHallwayWalls);
+                drawSequence(world.tiles, h.getPath(), patternHallwayFloor);
+                drawSequence(world.tiles, h.getWalls(), patternHallwayWalls);
                 srcRoomIdx = roomsDS.getLoneliestElement();
             } else {
-//                System.out.println(String.format("skip %d -> %d because it aint feasible",
-//                        srcRoomIdx, tgtRoomIdx));
                 srcRoomIdx = roomsDS.getNextLoneliestElement(srcRoomIdx);
             }
         }
@@ -190,19 +173,19 @@ public class Room {
         return tiles;
     }
 
-    /** Change tile pattern along given path on tiles. */
-    static TETile[][] drawPath(TETile[][] tiles, Set<Position> path, TETile hallwayPattern) {
-        for (Position pos : path) {
+    /** Change tile patterns along given sequence of positions on tiles. */
+    static TETile[][] drawSequence(TETile[][] tiles, Set<Position> sequence
+            , TETile hallwayPattern) {
+        for (Position pos : sequence) {
             tiles[pos.getX()][pos.getY()] = hallwayPattern;
         }
         return tiles;
     }
 
-    /** Return index (of Rooms) that represents a Room that Room at srcRoomIdx is closest to and
-     * not connected to. */
+    /** Return index (of Rooms) that represents a Room that is closest to and
+     * not connected to source room (srcRoomIdx). */
     static int getApproxAdjacUnconnectedRoom(WQUDisjointSet ds, ArrayList<Room> rooms,
                                           int srcRoomIdx) {
-//        System.out.println("getApproxAdjacUnconnectedRoom triggered.");
         Position srcRoomCenterCoor = rooms.get(srcRoomIdx).center;
         int tgtRoomIdx = 0;
         double minDist = Double.POSITIVE_INFINITY;
@@ -210,7 +193,6 @@ public class Room {
             if (r != srcRoomIdx && !ds.isConnected(srcRoomIdx, r)) {
                 Room tgtRoom = rooms.get(r);
                 double candidateDist = Position.dist(srcRoomCenterCoor, tgtRoom.center);
-//                System.out.println("dist between src: " + srcRoomIdx + " and " + r + " : " + candidateDist);
                 tgtRoomIdx = (candidateDist < minDist) ? r : tgtRoomIdx;
                 minDist = Math.min(candidateDist, minDist);
             }
@@ -218,7 +200,8 @@ public class Room {
         return tgtRoomIdx;
     }
 
-    boolean isPosWithinRoom(Position pos) { // TODO: amended
+    /** Check whether the given position is located on or inside the room. */
+    boolean isPosWithinRoom(Position pos) {
         return pos.getX() >= lowerLeft.getX() && pos.getY() >= lowerLeft.getY()
                 && pos.getX() <= upperRight.getX() && pos.getY() <= upperRight.getY();
     }

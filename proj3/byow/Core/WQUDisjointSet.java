@@ -5,8 +5,11 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 public class WQUDisjointSet {
+    /** Track parents of elements in disjoint set. */
     private int[] parentArray;
+    /** Actual elements in disjoint set. */
     private Object[] objectArray;
+    /** Size of disjoint set. */
     private int size;
 
     WQUDisjointSet(ArrayList<?> objects) {

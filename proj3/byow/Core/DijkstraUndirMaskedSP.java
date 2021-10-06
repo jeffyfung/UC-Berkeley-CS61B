@@ -8,9 +8,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class DijkstraUndirMaskedSP {
+    /** Edge weighted undirected graph. */
     private TileGraph g;
+    /** Distances to vertices in graph. */
     private double[] distTo;
+    /** Keep track of edges connecting vertices on the shortest path computed */
     private Edge[] edgeTo;
+    /** Priority queue to keep track of distances between source vertex and other vertices. */
     private IndexMinPQ<Double> pq;
 
     public DijkstraUndirMaskedSP(TileGraph g, int s,
@@ -48,12 +52,15 @@ public class DijkstraUndirMaskedSP {
         assert check(g, s);
     }
 
-    // do not relax any vertices in exception
-    // TODO: run with width=1 path for testing first - restrict path from touching boundaries?
+    /** For a edge e that connects vertex v, updates the shortest distance from source vertex to
+     * the other vertex of e unless the other vertex is in the given exception set or the
+     * existing distance is equal or shorter than the new distance. */
     private void relax(Edge e, int v, Set<Integer> exception) {
         int w = e.other(v);
         Set<Integer> wPeriphery = TileGraph.getVPeriphery(g, v);
-        if (Collections.disjoint(wPeriphery, exception) && distTo[w] > distTo[v] + e.weight()) {
+        // TODO: debug - skip if v is located on the periphery of worldMap
+        if (!g.isVertexOnGraphBoundary(v) && Collections.disjoint(wPeriphery, exception)
+                && distTo[w] > distTo[v] + e.weight()) {
             distTo[w] = distTo[v] + e.weight();
             edgeTo[w] = e;
             if (pq.contains(w)) {
@@ -65,16 +72,20 @@ public class DijkstraUndirMaskedSP {
         }
     }
 
+    /** Return the distance from source vertex to given vertex v */
     public double distTo(int v) {
         validateVertex(v);
         return distTo[v];
     }
 
+    /** Check if there is a path between source vertex and given vertex v. */
     public boolean hasPathTo(int v) {
         validateVertex(v);
         return distTo[v] < Double.POSITIVE_INFINITY;
     }
 
+    /** Return the path from source vertex to the given vertex in a sequence of integer,
+     * including both source and target vertices. */
     public Iterable<Integer> pathTo(int v) {
         validateVertex(v);
         Stack<Integer> vPath = new Stack<>();
@@ -90,6 +101,7 @@ public class DijkstraUndirMaskedSP {
         return vPath;
     }
 
+    /** Check integrity of the graph. */
     private boolean check(EdgeWeightedGraph G, int s) {
         // check that edge weights are non-negative
         for (Edge e : G.edges()) {

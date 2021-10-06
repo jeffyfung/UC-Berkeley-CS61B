@@ -10,9 +10,9 @@ import java.util.Random;
 import static byow.Core.Room.*;
 
 public class WorldMap {
-    static final Random RANDOM = new Random(120); // 120
-    static final int worldWidth = 50;
-    static final int worldHeight = 50;
+    static final Random RANDOM = new Random(0); // 120, problem with 11
+    static final int worldWidth = 70; // 50
+    static final int worldHeight = 35; // 80
     TETile[][] tiles;
 
     public WorldMap() {
@@ -27,7 +27,6 @@ public class WorldMap {
     public static void main(String[] args){
         WorldMap testWorld = new WorldMap();
         ArrayList<Room> rooms = buildRooms(testWorld);
-        System.out.println("rooms built");
         connectRooms(testWorld, rooms);
 
         TERenderer ter = new TERenderer();

@@ -6,16 +6,27 @@ import edu.princeton.cs.algs4.EdgeWeightedGraph;
 
 import java.util.*;
 
+import static byow.Core.WorldMap.worldHeight;
+import static byow.Core.WorldMap.worldWidth;
+
 public class TileGraph extends EdgeWeightedGraph {
+    /** Width of the world. */
     private int mapWidth;
+    /** Width of the world. */
+    private int mapHeight;
+    /** List of Room objects. */
     private ArrayList<Room> rooms;
+    /** List of vertices on perimeters of each room. */
     private ArrayList<HashSet<Integer>> roomsVertices;
+    /** Track if edges have been added to a vertex during initialization. */
     private boolean[] vInstantiated;
+    /** Set of vertices locating on hallways, including paths and walls. */
     private HashSet<Integer> existingHallways = new HashSet<>();
 
     TileGraph(TETile[][] tiles, ArrayList<Room> rooms) {
-        super(tiles[0].length * tiles.length);
-        this.mapWidth = tiles[0].length;
+        super(worldWidth * worldHeight);
+        this.mapWidth = worldWidth;
+        this.mapHeight = worldHeight;
         this.rooms = rooms;
         this.roomsVertices = new ArrayList<>();
         this.vInstantiated = new boolean[V()];
@@ -42,14 +53,15 @@ public class TileGraph extends EdgeWeightedGraph {
         }
     }
 
-    /**
-     * Dijkstra / A*
-     */
+    /** Connect the a room (at srcRoomIdx) to another room (at tgtRoomIdx) by running a
+     * modified Dijkstra's algorithm on the vertex representing center of the source room. Return
+     * a hallway which consists of a 1 unit wide path and surrounding walls after processing the
+     * path by truncating and building walls around it. */
     public Hallway connect(int srcRoomIdx, int tgtRoomIdx) {
         Room srcRoom = rooms.get(srcRoomIdx);
-        int srcV = convertArrayPosToV(srcRoom.center.getX(), srcRoom.center.getY());
+        int srcV = convertArrayPosToV(srcRoom.center);
         Room tgtRoom = rooms.get(tgtRoomIdx);
-        int tgtV = convertArrayPosToV(tgtRoom.center.getX(), tgtRoom.center.getY());
+        int tgtV = convertArrayPosToV(tgtRoom.center);
         System.out.println("srcRoomCenter: " + srcRoom.center.getX() + " , " + srcRoom.center.getY());
         System.out.println("tgtRoomCenter: " + tgtRoom.center.getX() + " , " + tgtRoom.center.getY());
         System.out.println("srcV: " + srcV);
@@ -75,9 +87,8 @@ public class TileGraph extends EdgeWeightedGraph {
         return buildHallway(path, srcRoomVertices, tgtRoomVertices, srcRoom, tgtRoom);
     }
 
-    /**
-     * Recursively add undirected weighted edges to TileGraph from bottom left to top right.
-     */
+    /** Recursively add undirected weighted edges to TileGraph from bottom left to top right.
+     * Default weights are 1 for all edges. */
     public void addEdges(int v, int weight, int totalTiles) {
         if (vInstantiated[v]) {
             return;
@@ -93,10 +104,16 @@ public class TileGraph extends EdgeWeightedGraph {
         vInstantiated[v] = true;
     }
 
+    /** Return the given vertex and its immediately adjacent vertices in all directions all
+     * together in a set. */
     static public Set<Integer> getVPeriphery(TileGraph g, int v) {
         return Set.of(v, v - 1, v + 1, v - g.mapWidth, v + g.mapWidth);
     }
 
+    /** Process the given path of vertices, which connects source room to target room, in 2 ways:
+     * 1) truncate the path such that the hallway stops at the boundary of the rooms;
+     * 2) build walls along the path.
+     * Return the resulted hallway. */
     private Hallway buildHallway(List<Integer> path, Set<Integer> srcRoomVertices,
                                         Set<Integer> tgtRoomVertices, Room srcRoom, Room tgtRoom) {
 
@@ -120,6 +137,8 @@ public class TileGraph extends EdgeWeightedGraph {
         return h;
     }
 
+    /** Return an array of indices (of size 2) that indicates the starting and ending indices of
+     * the truncated path such that the path will stop at the boundaries of the rooms. */
     private int[] truncatePath(List<Integer> path, Set<Integer> srcRoomVertices,
                                Set<Integer> tgtRoomVertices) {
         int startVIdx = 0;
@@ -146,6 +165,8 @@ public class TileGraph extends EdgeWeightedGraph {
         return new int[]{startVIdx, lastVIdx};
     }
 
+    /** Check whether the given vertex is located on the corner of a room. Throws exception if
+     * the vertex is not located on the boundary of the given room. */
     private boolean isCornerVertex(int v, Set<Integer> roomVertices) {
         if (!roomVertices.contains(v)) {
             throw new NoSuchElementException(String.format("vertex %d is not located on " +
@@ -155,10 +176,13 @@ public class TileGraph extends EdgeWeightedGraph {
                 && !(roomVertices.contains(v + mapWidth) && roomVertices.contains(v - mapWidth)));
     }
 
+    /** Return a hallway with 2 updated sequences of tiles representing a path from source room
+     * to target room and walls along the path respectively. Any tile immediately or diagonally
+     * adjacent to a tile on the path is either part of a path or a wall surrounding a path. */
     private Hallway buildHallwayHelper(int v, int prevV, int prevPrevV,
                                               Map<Integer, int[]> directions, Room srcRoom,
                                               Room tgtRoom, Hallway h) {
-        Set<Position> truncatedPath = h.getPath();
+        Set<Position> path = h.getPath();
         Set<Position> walls = h.getWalls();
         List<Integer> wallsInScope = new LinkedList<>();
 
@@ -192,18 +216,28 @@ public class TileGraph extends EdgeWeightedGraph {
         if (!srcRoom.isPosWithinRoom(pathPos) && !tgtRoom.isPosWithinRoom(pathPos)) {
             existingHallways.add(prevV);
         }
-        truncatedPath.add(pathPos);
-        return new Hallway(truncatedPath, walls);
+        path.add(pathPos);
+        return new Hallway(path, walls);
     }
 
+    /** Check if the given vertex is located on the boundary of the graph. */
+    boolean isVertexOnGraphBoundary(int v) {
+        Position pos = convertVToArrayPos(v);
+        return pos.getX() == 0 || pos.getX() == mapWidth - 1
+                || pos.getY() == 0 || pos.getY() == mapHeight - 1;
+    }
+
+    /** Convert a Position object to corresponding vertex. */
     private int convertArrayPosToV(int x, int y) {
         return x + mapWidth * y;
     }
 
+    /** Convert a Position object to corresponding vertex. */
     private int convertArrayPosToV(Position pos) {
         return pos.getX() + mapWidth * pos.getY();
     }
 
+    /** Convert a corresponding vertex to Position object. */
     private Position convertVToArrayPos(int v) {
         return new Position(v % mapWidth, v / mapWidth);
     }
