@@ -16,9 +16,6 @@ public class MemoryGame {
     private Random rand;
     /** Whether or not the game is over. */
     private boolean gameOver;
-    /** Whether or not it is the player's turn. Used in the last section of the
-     * spec, 'Helpful UI'. */
-    private boolean playerTurn;
     /** The characters we generate random Strings from. */
     private static final char[] CHARACTERS = "abcdefghijklmnopqrstuvwxyz".toCharArray();
     /** Encouraging phrases. Used in the last section of the spec, 'Helpful UI'. */
@@ -43,6 +40,7 @@ public class MemoryGame {
          */
         this.width = width;
         this.height = height;
+        this.gameOver = false;
         StdDraw.setCanvasSize(this.width * 16, this.height * 16);
         Font font = new Font("Monaco", Font.BOLD, 30);
         StdDraw.setFont(font);
@@ -50,7 +48,7 @@ public class MemoryGame {
         StdDraw.setYscale(0, this.height);
         StdDraw.clear(Color.BLACK);
         StdDraw.enableDoubleBuffering();
-        
+
         this.rand = new Random(seed);
     }
 
@@ -119,6 +117,7 @@ public class MemoryGame {
             String stringGenerated = generateRandomString(this.round);
             flashSequence(stringGenerated);
             if (!solicitNCharsInput(this.round).equals(stringGenerated)) {
+                this.gameOver = true;
                 drawFrame("Game Over! You made it to round: " + this.round);
                 break;
             }
