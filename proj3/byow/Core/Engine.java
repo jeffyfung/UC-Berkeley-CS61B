@@ -84,8 +84,8 @@ public class Engine {
 
         ArrayList<Room> rooms = buildRooms(this);
         connectRooms(this, rooms);
-//        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
-//        ter.renderFrame(tiles);
+        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
+        ter.renderFrame(tiles);
         return tiles;
     }
 

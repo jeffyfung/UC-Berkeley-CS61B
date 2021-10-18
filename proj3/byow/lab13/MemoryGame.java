@@ -1,10 +1,8 @@
 package byow.lab13;
 
-import byow.Core.RandomUtils;
 import edu.princeton.cs.introcs.StdDraw;
 
-import java.awt.Color;
-import java.awt.Font;
+import java.awt.*;
 import java.util.Random;
 
 public class MemoryGame {
@@ -52,33 +50,80 @@ public class MemoryGame {
         StdDraw.setYscale(0, this.height);
         StdDraw.clear(Color.BLACK);
         StdDraw.enableDoubleBuffering();
-
-        //TODO: Initialize random number generator
+        
+        this.rand = new Random(seed);
     }
 
     public String generateRandomString(int n) {
-        //TODO: Generate random string of letters of length n
-        return null;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < n ; i += 1) {
+            int idx = rand.nextInt(CHARACTERS.length);
+            sb.append(CHARACTERS[idx]);
+        }
+        return sb.toString();
+    }
+
+    public void drawFrame(String s, int pauseTime, String action) {
+        StdDraw.clear(Color.BLACK);
+        Font font = new Font("Helvetica", Font.BOLD, 30);
+        Font topFont = new Font("Helvetica", Font.BOLD, 20);
+        StdDraw.setFont(font);
+        StdDraw.setPenColor(StdDraw.WHITE);
+        StdDraw.text(this.width / 2.0 , this.height / 2.0, s);
+        // draw top row
+        StdDraw.setFont(topFont);
+        StdDraw.textLeft(0.5, this.height - 1.2, "Round: " + this.round);
+        String actionWord = action.equals("watch")? "Watch!" : "Type!";
+        StdDraw.text(this.width / 2.0, this.height - 1.2, actionWord);
+        String encouragingWord = ENCOURAGEMENT[rand.nextInt(ENCOURAGEMENT.length)];
+        StdDraw.textRight(this.width - 0.5, this.height - 1.2, encouragingWord);
+        // draw horizontal line
+        StdDraw.line(0, this.height - 2, this.width, this.height - 2);
+        StdDraw.show();
+        StdDraw.pause(pauseTime);
     }
 
     public void drawFrame(String s) {
-        //TODO: Take the string and display it in the center of the screen
-        //TODO: If game is not over, display relevant game information at the top of the screen
+        StdDraw.clear(Color.BLACK);
+        Font font = new Font("Helvetica", Font.BOLD, 30);
+        StdDraw.setFont(font);
+        StdDraw.setPenColor(StdDraw.WHITE);
+        StdDraw.text(this.width / 2.0 , this.height / 2.0, s);
+        StdDraw.show();
     }
 
     public void flashSequence(String letters) {
-        //TODO: Display each character in letters, making sure to blank the screen between letters
+        for (int i = 0; i < letters.length(); i += 1) {
+            drawFrame(Character.toString(letters.charAt(i)), 1000, "watch");
+            drawFrame("", 1000, "watch");
+        }
     }
 
     public String solicitNCharsInput(int n) {
-        //TODO: Read n letters of player input
-        return null;
+        drawFrame("", 0, "type"); // whats the nature of .pause()?
+        StringBuilder sb = new StringBuilder();
+        while (sb.length() != n) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char key = StdDraw.nextKeyTyped();
+                sb.append(key);
+                drawFrame(sb.toString(), 200, "type");
+            }
+        }
+        return sb.toString();
     }
 
     public void startGame() {
-        //TODO: Set any relevant variables before the game starts
-
-        //TODO: Establish Engine loop
+        this.round = 1;
+        while (true) {
+            drawFrame("Round: " + this.round, 1000, "watch");
+            String stringGenerated = generateRandomString(this.round);
+            flashSequence(stringGenerated);
+            if (!solicitNCharsInput(this.round).equals(stringGenerated)) {
+                drawFrame("Game Over! You made it to round: " + this.round);
+                break;
+            }
+            this.round += 1;
+        }
     }
 
 }
