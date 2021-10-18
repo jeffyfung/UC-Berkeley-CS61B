@@ -40,25 +40,15 @@ public class Room {
         }
         // partition space using the KdTree and sample room from partitioned space
         ArrayList<Room> rooms = new ArrayList<>();
-//        LinkedList<Position> partitionLL = new LinkedList<>();
-//        LinkedList<Position> partitionUR = new LinkedList<>();
         for (KdTree.EmptyLeafExtensionSpace partition : kdt.getPartitionedSpace()) {
             Room room = sampleRoomFromPartition(partition, false, 0
                     , world.random);
-//            partitionLL.add(partition.lowerLeft);
-//            partitionUR.add(partition.upperRight);
             if (room != null) {
                 drawRoom(world.tiles, room, patternRoomWalls, patternRoomFloor);
                 rooms.add(room);
             }
         }
         KdTree.resetPartitionedSpace();
-//        for (Position pt : partitionLL) {
-//            world.world[pt.xy[0]][pt.xy[1]] = Tileset.GRASS;
-//        }
-//        for (Position pt : partitionUR) {
-//            world.world[pt.xy[0]][pt.xy[1]] = Tileset.FLOWER;
-//        }
         return rooms;
     }
 
@@ -72,23 +62,14 @@ public class Room {
         int srcRoomIdx = 0;
         while (!roomsDS.connectedToAllObjects(srcRoomIdx)) {
             int tgtRoomIdx = getApproxAdjacUnconnectedRoom(roomsDS, rooms, srcRoomIdx);
-            // for test purpose only
-            System.out.println("source room: " + srcRoomIdx);
-            System.out.println("adjacent unconnected room: " + tgtRoomIdx);
             // TODO: alternative method for calculating tgtRoom e.g. use Dijkstra's ? (inaccessible)
-
             Hallway h = g.connect(srcRoomIdx, tgtRoomIdx);
-            //             for testing purpose
-//            if (srcRoomIdx == 9 && tgtRoomIdx == 6) {
-//                drawRoom(world.tiles, rooms.get(srcRoomIdx), Tileset.WATER, Tileset.FLOOR);
-//                drawRoom(world.tiles, rooms.get(tgtRoomIdx), Tileset.FLOWER, Tileset.FLOOR);
-//                return;
-//            }
             if (h != null) {
                 roomsDS.connect(srcRoomIdx, tgtRoomIdx);
                 drawSequence(world.tiles, h.getPath(), patternHallwayFloor);
                 drawSequence(world.tiles, h.getWalls(), patternHallwayWalls);
                 srcRoomIdx = roomsDS.getLoneliestElement();
+                // TODO: append every hallways for quick retrieval? (apart from existingHallways)
             } else {
                 srcRoomIdx = roomsDS.getNextLoneliestElement(srcRoomIdx);
             }

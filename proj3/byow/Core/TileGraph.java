@@ -6,10 +6,6 @@ import edu.princeton.cs.algs4.EdgeWeightedGraph;
 import java.util.*;
 
 public class TileGraph extends EdgeWeightedGraph {
-//    /** Width of the world. */
-//    private int mapWidth;
-//    /** Width of the world. */
-//    private int mapHeight;
     /** List of Room objects. */
     private ArrayList<Room> rooms;
     /** List of vertices on perimeters of each room. */
@@ -21,8 +17,6 @@ public class TileGraph extends EdgeWeightedGraph {
 
     TileGraph(ArrayList<Room> rooms) {
         super(Engine.WORLD_WIDTH * Engine.WORLD_HEIGHT);
-//        this.mapWidth = Engine.WORLD_WIDTH;
-//        this.mapHeight = Engine.WORLD_HEIGHT;
         this.rooms = rooms;
         this.roomsVertices = new ArrayList<>();
         this.vInstantiated = new boolean[V()];
@@ -58,10 +52,6 @@ public class TileGraph extends EdgeWeightedGraph {
         int srcV = convertArrayPosToV(srcRoom.center);
         Room tgtRoom = rooms.get(tgtRoomIdx);
         int tgtV = convertArrayPosToV(tgtRoom.center);
-        System.out.println("srcRoomCenter: " + srcRoom.center.getX() + " , " + srcRoom.center.getY());
-        System.out.println("tgtRoomCenter: " + tgtRoom.center.getX() + " , " + tgtRoom.center.getY());
-        System.out.println("srcV: " + srcV);
-        System.out.println("tgtV: " + tgtV);
 
         ArrayList<HashSet<Integer>> inaccessibleAreas = new ArrayList<>();
         inaccessibleAreas.addAll(roomsVertices);

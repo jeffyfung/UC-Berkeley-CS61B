@@ -82,8 +82,11 @@ public class Engine {
         }
         this.random = new Random(seed);
 
-        ArrayList<Room> rooms = buildRooms(this);
-        connectRooms(this, rooms);
+        ArrayList<Room> rooms = Room.buildRooms(this);
+        Room.connectRooms(this, rooms);
+        GameMechanism.initializeGameplay(this, rooms);
+        System.out.println("done with initialization");
+
         ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
         ter.renderFrame(tiles);
         return tiles;
@@ -93,6 +96,7 @@ public class Engine {
         return TETile.toString(tiles);
     }
 
+    // TODO: to remove
     public static void main(String[] args){
         Engine test = new Engine();
         ArrayList<Room> rooms = buildRooms(test);
