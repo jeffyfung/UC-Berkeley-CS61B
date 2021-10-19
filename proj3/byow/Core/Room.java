@@ -23,10 +23,10 @@ public class Room {
 
     /** Return a list of Room objects. Each room is randomly sampled from a space partitioned
      * by leaf nodes of a random modified KdTree. */
-    public static ArrayList<Room> buildRooms(Engine world) {
+    public static ArrayList<Room> buildRooms(Engine engine) {
         // generate a random sequence of Position objects, limited by range of world map
         List<Position> posSeq = generateRandomPos(Engine.WORLD_WIDTH, Engine.WORLD_HEIGHT,
-                world.random);
+                engine.random);
         // build KdTree from the random sequence
         KdTree kdt = null;
         for (Position pos : posSeq) {
@@ -42,9 +42,9 @@ public class Room {
         ArrayList<Room> rooms = new ArrayList<>();
         for (KdTree.EmptyLeafExtensionSpace partition : kdt.getPartitionedSpace()) {
             Room room = sampleRoomFromPartition(partition, false, 0
-                    , world.random);
+                    , engine.random);
             if (room != null) {
-                drawRoom(world.tiles, room, patternRoomWalls, patternRoomFloor);
+                drawRoom(engine, room, patternRoomWalls, patternRoomFloor);
                 rooms.add(room);
             }
         }
@@ -56,7 +56,7 @@ public class Room {
      *  approximately closest, second closest or third closest room until all rooms are connected.
      *  Skip a candidate pair of connection if a connection cannot be formed between the pair of
      *  rooms. Draw the resulted hallway during each successful connection. */
-    public static void connectRooms(Engine world, ArrayList<Room> rooms) { ;
+    public static void connectRooms(Engine engine, ArrayList<Room> rooms) { ;
         WQUDisjointSet roomsDS = new WQUDisjointSet(rooms);
         TileGraph g = new TileGraph(rooms);
         int srcRoomIdx = 0;
@@ -72,8 +72,8 @@ public class Room {
                 h = g.connect(srcRoomIdx, tgtRoomIdx);
                 if (h != null) {
                     roomsDS.connect(srcRoomIdx, tgtRoomIdx);
-                    drawSequence(world.tiles, h.getPath(), patternHallwayFloor);
-                    drawSequence(world.tiles, h.getWalls(), patternHallwayWalls);
+                    drawSequence(engine, h.getPath(), patternHallwayFloor);
+                    drawSequence(engine, h.getWalls(), patternHallwayWalls);
                     srcRoomIdx = roomsDS.getLoneliestElement();
                     break;
                 }
@@ -145,7 +145,7 @@ public class Room {
 
     /** Change tile patterns located inside given room on the 2D tile array that represents the
      * world. Return the altered 2D tile array. */
-    static TETile[][] drawRoom(TETile[][] tiles, Room room, TETile wallPattern,
+    static void drawRoom(Engine engine, Room room, TETile wallPattern,
                                  TETile floorPattern) {
         Position lowerLeft = room.lowerLeft;
         Position upperRight = room.upperRight;
@@ -153,22 +153,20 @@ public class Room {
             for (int j = lowerLeft.getY(); j <= upperRight.getY(); j += 1) {
                 if (i == lowerLeft.getX() || i == upperRight.getX()
                         || j == lowerLeft.getY()|| j == upperRight.getY()) {
-                    tiles[i][j] = wallPattern;
+                    engine.changeTilePattern(i, j, wallPattern);
                 } else {
-                    tiles[i][j] = floorPattern;
+                    engine.changeTilePattern(i, j, floorPattern);
                 }
             }
         }
-        return tiles;
     }
 
     /** Change tile patterns along given sequence of positions on tiles. */
-    static TETile[][] drawSequence(TETile[][] tiles, Set<Position> sequence
+    static void drawSequence(Engine engine, Set<Position> sequence
             , TETile hallwayPattern) {
         for (Position pos : sequence) {
-            tiles[pos.getX()][pos.getY()] = hallwayPattern;
+            engine.changeTilePattern(pos, hallwayPattern);
         }
-        return tiles;
     }
 
     /** Return index (of Rooms) that represents a Room that is closest to and

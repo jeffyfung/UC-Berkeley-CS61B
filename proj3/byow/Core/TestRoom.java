@@ -22,7 +22,7 @@ public class TestRoom {
                 nullCounter += 1;
                 continue;
             }
-            Room.drawRoom(test.tiles, room, Tileset.WALL, Tileset.FLOOR);
+            Room.drawRoom(test, room, Tileset.WALL, Tileset.FLOOR);
         }
         KdTree.resetPartitionedSpace();
         assertEquals(1, nullCounter);

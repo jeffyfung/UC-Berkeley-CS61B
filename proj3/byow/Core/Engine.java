@@ -96,6 +96,26 @@ public class Engine {
         return TETile.toString(tiles);
     }
 
+    /** Change pattern of the specific tile */
+    public TETile[][] changeTilePattern(Position pos, TETile newTilePattern) {
+        tiles[pos.getX()][pos.getY()] = newTilePattern;
+        return tiles;
+    }
+
+    /** Change pattern of the specific tile */
+    public TETile[][] changeTilePattern(int x, int y, TETile newTilePattern) {
+        tiles[x][y] = newTilePattern;
+        return tiles;
+    }
+
+    public TETile getTilePattern(Position pos) {
+        return tiles[pos.getX()][pos.getY()];
+    }
+
+    public TETile getTilePattern(int x, int y) {
+        return tiles[x][y];
+    }
+
     // TODO: to remove
     public static void main(String[] args){
         Engine test = new Engine();
