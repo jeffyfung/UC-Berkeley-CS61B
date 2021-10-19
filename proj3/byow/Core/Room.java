@@ -53,25 +53,33 @@ public class Room {
     }
 
     /** Connect all rooms by repeatedly finding the least connected room and connecting it to the
-     *  approximately closest room until all rooms are connected. Skip a candidate pair of
-     *  connection if a connection cannot be formed between the pair of rooms. Draw the resulted
-     *  hallway during each successful connection. */
+     *  approximately closest, second closest or third closest room until all rooms are connected.
+     *  Skip a candidate pair of connection if a connection cannot be formed between the pair of
+     *  rooms. Draw the resulted hallway during each successful connection. */
     public static void connectRooms(Engine world, ArrayList<Room> rooms) { ;
         WQUDisjointSet roomsDS = new WQUDisjointSet(rooms);
         TileGraph g = new TileGraph(rooms);
         int srcRoomIdx = 0;
         while (!roomsDS.connectedToAllObjects(srcRoomIdx)) {
-            int tgtRoomIdx = getApproxAdjacUnconnectedRoom(roomsDS, rooms, srcRoomIdx);
             // TODO: alternative method for calculating tgtRoom e.g. use Dijkstra's ? (inaccessible)
-            Hallway h = g.connect(srcRoomIdx, tgtRoomIdx);
-            if (h != null) {
-                roomsDS.connect(srcRoomIdx, tgtRoomIdx);
-                drawSequence(world.tiles, h.getPath(), patternHallwayFloor);
-                drawSequence(world.tiles, h.getWalls(), patternHallwayWalls);
-                srcRoomIdx = roomsDS.getLoneliestElement();
-                // TODO: append every hallways for quick retrieval? (apart from existingHallways)
-            } else {
-                srcRoomIdx = roomsDS.getNextLoneliestElement(srcRoomIdx);
+            // TODO: append every hallways for quick retrieval? (apart from existingHallways)
+            List<Integer> tgtRoomIdxList = getNApproxAdjacentUnconnectedRoom(3, roomsDS, rooms,
+                    srcRoomIdx);
+            Hallway h;
+            Integer tgtRoomIdx;
+            for (int i = 0; i < tgtRoomIdxList.size(); i += 1) {
+                tgtRoomIdx = tgtRoomIdxList.get(i);
+                h = g.connect(srcRoomIdx, tgtRoomIdx);
+                if (h != null) {
+                    roomsDS.connect(srcRoomIdx, tgtRoomIdx);
+                    drawSequence(world.tiles, h.getPath(), patternHallwayFloor);
+                    drawSequence(world.tiles, h.getWalls(), patternHallwayWalls);
+                    srcRoomIdx = roomsDS.getLoneliestElement();
+                    break;
+                }
+                if (i == tgtRoomIdxList.size() - 1) {
+                    srcRoomIdx = roomsDS.getNextLoneliestElement(srcRoomIdx);
+                }
             }
         }
     }
@@ -179,6 +187,28 @@ public class Room {
             }
         }
         return tgtRoomIdx;
+    }
+
+    /** Return a list of indices of the n approximately closest rooms to the source room
+     * (srcRoomIdx). */
+    static List<Integer> getNApproxAdjacentUnconnectedRoom(int n, WQUDisjointSet ds,
+                                                     ArrayList<Room> rooms, int srcRoomIdx) {
+        Position srcRoomCenterCoor = rooms.get(srcRoomIdx).center;
+        List<Integer> out = new LinkedList<>();
+        for (int i = 0; i < n; i += 1) {
+            int tgtRoomIdx = 0;
+            double minDist = Double.POSITIVE_INFINITY;
+            for (int r = 0; r < rooms.size(); r += 1) {
+                if (r != srcRoomIdx && !out.contains(r) && !ds.isConnected(srcRoomIdx, r)) {
+                    Room tgtRoom = rooms.get(r);
+                    double candidateDist = Position.dist(srcRoomCenterCoor, tgtRoom.center);
+                    tgtRoomIdx = (candidateDist < minDist) ? r : tgtRoomIdx;
+                    minDist = Math.min(candidateDist, minDist);
+                }
+            }
+            out.add(tgtRoomIdx);
+        }
+        return out;
     }
 
     /** Check whether the given position is located on or inside the room. */

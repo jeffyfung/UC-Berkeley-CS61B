@@ -7,16 +7,19 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class GameMechanism {
-    static Random rand;
-    static TETile[][] tiles;
-    static Player player;
-    static Position exit;
+    static Random RAND;
+    static TETile[][] TILES;
+    static Player PLAYER;
+    static Position EXIT;
+    static final float MIN_DIST_PLAYER_EXIT = 20; //20
 
     public static void initializeGameplay(Engine engine, ArrayList<Room> rooms) {
-        rand = engine.random;
-        tiles = engine.tiles;
-        player = initializePlayer(Tileset.AVATAR);
-        exit = initializeExit(rooms);
+        System.out.println("start init gameplay");
+        RAND = engine.random;
+        TILES = engine.tiles;
+        PLAYER = initializePlayer(Tileset.AVATAR);
+        EXIT = initializeExit(rooms);
+        System.out.println("done init gameplay");
         drawPlayer();
         drawExit(Tileset.UNLOCKED_DOOR);
     }
@@ -24,39 +27,60 @@ public class GameMechanism {
     private static Player initializePlayer(TETile avatar) {
         int x = 0;
         int y = 0;
-        while (!tiles[x][y].equals(Tileset.FLOOR)) {
-            x = rand.nextInt(Engine.WORLD_WIDTH);
-            y = rand.nextInt(Engine.WORLD_HEIGHT);
+        while (!TILES[x][y].equals(Tileset.FLOOR)) {
+            x = RAND.nextInt(Engine.WORLD_WIDTH);
+            y = RAND.nextInt(Engine.WORLD_HEIGHT);
         }
         Position pos = new Position(x,y);
         return new Player(pos, avatar);
     }
 
     private static Position initializeExit(ArrayList<Room> rooms) {
-        Room randRoom = rooms.get(rand.nextInt(rooms.size()));
+//        Room randRoom = rooms.get(RAND.nextInt(rooms.size()));
+//        int x = randRoom.lowerLeft.getX();
+//        int y = randRoom.lowerLeft.getY();
+//        int dX;
+//        int dY;
+//        while (!tiles[x][y].equals(Tileset.WALL)
+//                || (x == randRoom.lowerLeft.getX() && y == randRoom.lowerLeft.getY())
+//                || (x == randRoom.lowerLeft.getX() && y == randRoom.upperRight.getY())
+//                || (x == randRoom.upperRight.getX() && y == randRoom.lowerLeft.getY())
+//                || (x == randRoom.upperRight.getX() && y == randRoom.upperRight.getY())) {
+//            dX = RAND.nextInt(randRoom.upperRight.getX() - randRoom.lowerLeft.getX() + 1);
+//            dY = RAND.nextInt(randRoom.upperRight.getY() - randRoom.lowerLeft.getY() + 1);
+//            x = randRoom.lowerLeft.getX() + dX;
+//            y = randRoom.lowerLeft.getY() + dY;
+//        }
+//        return new Position(x,y);
+        Room randRoom = rooms.get(RAND.nextInt(rooms.size()));
         int x = randRoom.lowerLeft.getX();
         int y = randRoom.lowerLeft.getY();
         int dX;
         int dY;
-        while (!tiles[x][y].equals(Tileset.WALL)
+        Position exitPos = new Position(x, y);
+        while (!TILES[x][y].equals(Tileset.WALL)
+                || Position.dist(exitPos, PLAYER.getPlayerPos()) < MIN_DIST_PLAYER_EXIT
                 || (x == randRoom.lowerLeft.getX() && y == randRoom.lowerLeft.getY())
                 || (x == randRoom.lowerLeft.getX() && y == randRoom.upperRight.getY())
                 || (x == randRoom.upperRight.getX() && y == randRoom.lowerLeft.getY())
                 || (x == randRoom.upperRight.getX() && y == randRoom.upperRight.getY())) {
-            dX = rand.nextInt(randRoom.upperRight.getX() - randRoom.lowerLeft.getX() + 1);
-            dY = rand.nextInt(randRoom.upperRight.getY() - randRoom.lowerLeft.getY() + 1);
+            randRoom = rooms.get(RAND.nextInt(rooms.size()));
+            dX = RAND.nextInt(randRoom.upperRight.getX() - randRoom.lowerLeft.getX() + 1);
+            dY = RAND.nextInt(randRoom.upperRight.getY() - randRoom.lowerLeft.getY() + 1);
             x = randRoom.lowerLeft.getX() + dX;
             y = randRoom.lowerLeft.getY() + dY;
+            exitPos = new Position(x, y);
+            System.out.println(String.format("%d,%d", x, y));
         }
-        return new Position(x,y);
+        return exitPos;
     }
 
     private static void drawPlayer() {
-        tiles[player.getPlayerPos().getX()][player.getPlayerPos().getY()] = player.getAvatar();
+        TILES[PLAYER.getPlayerPos().getX()][PLAYER.getPlayerPos().getY()] = PLAYER.getAvatar();
     }
 
     private static void drawExit(TETile tile) {
-        tiles[exit.getX()][exit.getY()] = tile;
+        TILES[EXIT.getX()][EXIT.getY()] = tile;
     }
 
     // TODO: add a changeTilePattern method at engine
