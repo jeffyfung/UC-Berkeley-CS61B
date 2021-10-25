@@ -96,7 +96,7 @@ public class TileGraph extends EdgeWeightedGraph {
         return Set.of(v, v - 1, v + 1, v - Engine.WORLD_WIDTH, v + Engine.WORLD_WIDTH);
     }
 
-    /** Process the given path of vertices, which connects source room to target room, in 2 ways:
+    /** Process the given path of vertices, which connects source room to target room, in 2 steps:
      * 1) truncate the path such that the hallway stops at the boundary of the rooms;
      * 2) build walls along the path.
      * Return the resulted hallway. */

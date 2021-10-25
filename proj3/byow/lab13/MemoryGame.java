@@ -98,7 +98,7 @@ public class MemoryGame {
     }
 
     public String solicitNCharsInput(int n) {
-        drawFrame("", 0, "type"); // whats the nature of .pause()?
+        drawFrame("", 0, "type");
         StringBuilder sb = new StringBuilder();
         while (sb.length() != n) {
             if (StdDraw.hasNextKeyTyped()) {

@@ -7,8 +7,6 @@ import java.util.ArrayList;
 
 public class GameMechanism {
     static Engine ENGINE;
-//    static Random RAND;
-//    static TETile[][] TILES;
     static Player PLAYER;
     static Position EXIT;
     static final float MIN_DIST_PLAYER_EXIT = 20;
@@ -64,5 +62,4 @@ public class GameMechanism {
 //    private static void drawExit(TETile tile) {
 //        TILES[EXIT.getX()][EXIT.getY()] = tile;
 //    }
-    // TODO: add a changeTilePattern method at engine -> change pattern of a single tile
 }

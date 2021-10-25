@@ -5,7 +5,9 @@ import byow.Input.StringInputDevice;
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
+import edu.princeton.cs.introcs.StdDraw;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -34,6 +36,30 @@ public class Engine {
      * including inputs from the main menu.
      */
     public void interactWithKeyboard() {
+        drawSetting();
+        drawMenu();
+        boolean loop = true;
+        while (loop) {
+            char inputChar = solicitCharInput();
+            switch (inputChar) {
+                case 'n':
+                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5*4
+                            , "Enter Seed Then Press s");
+                    runEngine(solicitSeed());
+                    // TODO: run interactive engine
+                    loop = false;
+                    break;
+                case 'l':
+                    // load game; add later
+                    clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5*4
+                            , "tbi");
+                    loop = false;
+                    break;
+                case 'q':
+                    System.exit(0);
+                default:
+            }
+        }
     }
 
     /**
@@ -69,7 +95,7 @@ public class Engine {
             } else if (c == 'S') {
                 startSeed = false;
             }
-            // other inputs e.g. L, Q, S etc
+            // TODO: cater for other inputs e.g. L, Q, S etc
             if (startSeed) {
                 Integer num = Character.getNumericValue(c);
                 seed = seed == null ? num : seed * 10 + num;
@@ -80,16 +106,86 @@ public class Engine {
                     "and S, for example, N123S. Please re-enter.");
             return null;
         }
-        this.random = new Random(seed);
-
-        ArrayList<Room> rooms = Room.buildRooms(this);
-        Room.connectRooms(this, rooms);
-        GameMechanism.initializeGameplay(this, rooms);
-        System.out.println("done with initialization");
-
-        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
-        ter.renderFrame(tiles);
+        runEngine(seed);
         return tiles;
+    }
+
+    private void drawSetting() {
+        StdDraw.setCanvasSize(WORLD_WIDTH * 16, (WORLD_HEIGHT + 3) * 16);
+        StdDraw.setXscale(0, WORLD_WIDTH);
+        StdDraw.setYscale(0, WORLD_HEIGHT);
+        StdDraw.setPenColor(StdDraw.WHITE);
+        StdDraw.enableDoubleBuffering();
+    }
+
+    private void drawMenu() {
+        Font titleFont = new Font("Helvetica", Font.BOLD, 40);
+        StdDraw.setFont(titleFont);
+        StdDraw.clear(Color.BLACK);
+        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 3 / 4.0, "Simple Dungeon Game");
+        Font optionsFont = new Font("Helvetica", Font.PLAIN, 25);
+        StdDraw.setFont(optionsFont);
+        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0, "New Game (N)");
+        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5, "Load Game (L)");
+        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5*2, "Quit (Q)");
+        StdDraw.show();
+    }
+
+    private void drawText(double x, double y, String str) {
+        StdDraw.text(x, y, str);
+        StdDraw.show();
+    }
+
+    private void drawTextWithFont(double x, double y, String str, Font font) {
+        StdDraw.setFont(font);
+        StdDraw.text(x, y, str);
+        StdDraw.show();
+    }
+
+    private void clearCanvasAndDrawText(double x, double y, String str) {
+        StdDraw.clear(Color.BLACK);
+        StdDraw.text(x, y, str);
+        StdDraw.show();
+    }
+
+    private char solicitCharInput() {
+        char input = ' ';
+        char out = ' ';
+        while (input == ' ') {
+            if (StdDraw.hasNextKeyTyped()) {
+                input = StdDraw.nextKeyTyped();
+                out = Character.toLowerCase(input);
+            }
+        }
+        System.out.println(out);
+        return out;
+    }
+
+    private int solicitSeed() {
+        StringBuilder sb = new StringBuilder();
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
+                if (input == 's') {
+                    try {
+                        return Integer.parseUnsignedInt(sb.toString());
+                    } catch (NumberFormatException e) {
+                        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5*6
+                                , "Accept Positive Integer Only! Try Again!");
+                        StdDraw.show();
+                        sb = new StringBuilder();
+                    }
+                } else {
+                    sb.append(input);
+                    drawMenu();
+                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5*5, sb.toString());
+                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5*4
+                            , "Enter Seed Then Press s");
+                    StdDraw.show();
+                    System.out.println(input);
+                }
+            }
+        }
     }
 
     public String toString() {
@@ -114,6 +210,16 @@ public class Engine {
 
     public TETile getTilePattern(int x, int y) {
         return tiles[x][y];
+    }
+
+    public void runEngine(int seed) {
+        this.random = new Random(seed);
+        ArrayList<Room> rooms = Room.buildRooms(this);
+        Room.connectRooms(this, rooms);
+        GameMechanism.initializeGameplay(this, rooms);
+
+        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
+        ter.renderFrame(tiles);
     }
 
     // TODO: to remove
