@@ -1,15 +1,12 @@
 package byow.Core;
 
 import byow.TileEngine.TETile;
-import byow.TileEngine.Tileset;
 
 import java.util.*;
 
+import static byow.Core.Engine.*;
+
 public class Room {
-    static final TETile patternRoomWalls = Tileset.WALL;
-    static final TETile patternRoomFloor = Tileset.FLOOR;
-    static final TETile patternHallwayWalls = Tileset.WALL;
-    static final TETile patternHallwayFloor = Tileset.FLOOR;
     Position lowerLeft;
     Position upperRight;
     Position center;

@@ -15,8 +15,8 @@ public class GameMechanism {
         ENGINE = engine;
         PLAYER = initializePlayer(Tileset.AVATAR);
         EXIT = initializeExit(rooms);
-        engine.changeTilePattern(PLAYER.getPlayerPos(), Tileset.AVATAR);
-        engine.changeTilePattern(EXIT, Tileset.UNLOCKED_DOOR);
+        ENGINE.changeTilePattern(PLAYER.pos, Tileset.AVATAR);
+        ENGINE.changeTilePattern(EXIT, Tileset.UNLOCKED_DOOR);
     }
 
     private static Player initializePlayer(TETile avatar) {
@@ -38,7 +38,7 @@ public class GameMechanism {
         int dY;
         Position exitPos = new Position(x, y);
         while (!ENGINE.getTilePattern(x, y).equals(Tileset.WALL)
-                || Position.dist(exitPos, PLAYER.getPlayerPos()) < MIN_DIST_PLAYER_EXIT
+                || Position.dist(exitPos, PLAYER.pos) < MIN_DIST_PLAYER_EXIT
                 || (x == randRoom.lowerLeft.getX() && y == randRoom.lowerLeft.getY())
                 || (x == randRoom.lowerLeft.getX() && y == randRoom.upperRight.getY())
                 || (x == randRoom.upperRight.getX() && y == randRoom.lowerLeft.getY())
@@ -53,6 +53,10 @@ public class GameMechanism {
             exitPos = new Position(x, y);
         }
         return exitPos;
+    }
+
+    static GameObject moveGameObject(GameObject go, int dX, int dY) {
+        return go.move(dX, dY);
     }
 
 //    private static void drawPlayer() {
