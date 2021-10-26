@@ -11,9 +11,6 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
 
-import static byow.Core.Room.buildRooms;
-import static byow.Core.Room.connectRooms;
-
 public class Engine {
     TERenderer ter = new TERenderer();
     Random random;
@@ -166,6 +163,7 @@ public class Engine {
         while (true) {
             if (StdDraw.hasNextKeyTyped()) {
                 char input = Character.toLowerCase(StdDraw.nextKeyTyped());
+                System.out.println(input);
                 if (input == 's') {
                     try {
                         return Integer.parseUnsignedInt(sb.toString());
@@ -182,7 +180,6 @@ public class Engine {
                     drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5*4
                             , "Enter Seed Then Press s");
                     StdDraw.show();
-                    System.out.println(input);
                 }
             }
         }
@@ -221,15 +218,4 @@ public class Engine {
         ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
         ter.renderFrame(tiles);
     }
-
-    // TODO: to remove
-    public static void main(String[] args){
-        Engine test = new Engine();
-        ArrayList<Room> rooms = buildRooms(test);
-        connectRooms(test, rooms);
-
-        test.ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
-        test.ter.renderFrame(test.tiles);
-    }
-
 }

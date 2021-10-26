@@ -63,23 +63,16 @@ public class Room {
         while (!roomsDS.connectedToAllObjects(srcRoomIdx)) {
             // TODO: alternative method for calculating tgtRoom e.g. use Dijkstra's ? (inaccessible)
             // TODO: append every hallways for quick retrieval? (apart from existingHallways)
-            List<Integer> tgtRoomIdxList = getNApproxAdjacentUnconnectedRoom(3, roomsDS, rooms,
-                    srcRoomIdx);
-            Hallway h;
-            Integer tgtRoomIdx;
-            for (int i = 0; i < tgtRoomIdxList.size(); i += 1) {
-                tgtRoomIdx = tgtRoomIdxList.get(i);
-                h = g.connect(srcRoomIdx, tgtRoomIdx);
-                if (h != null) {
-                    roomsDS.connect(srcRoomIdx, tgtRoomIdx);
-                    drawSequence(engine, h.getPath(), patternHallwayFloor);
-                    drawSequence(engine, h.getWalls(), patternHallwayWalls);
-                    srcRoomIdx = roomsDS.getLoneliestElement();
-                    break;
-                }
-                if (i == tgtRoomIdxList.size() - 1) {
-                    srcRoomIdx = roomsDS.getNextLoneliestElement(srcRoomIdx);
-                }
+            int tgtRoomIdx = getApproxAdjacUnconnectedRoom(roomsDS, rooms, srcRoomIdx);
+            Hallway h = g.connect(srcRoomIdx, tgtRoomIdx);
+            if (h != null) {
+                roomsDS.connect(srcRoomIdx, tgtRoomIdx);
+                drawSequence(engine, h.getPath(), patternHallwayFloor);
+                drawSequence(engine, h.getWalls(), patternHallwayWalls);
+                srcRoomIdx = roomsDS.getLoneliestElement();
+            } else {
+                Integer nok = roomsDS.nextOfKin(srcRoomIdx);
+                srcRoomIdx = (nok == null)? roomsDS.getNextLoneliestElement(srcRoomIdx) : nok;
             }
         }
     }

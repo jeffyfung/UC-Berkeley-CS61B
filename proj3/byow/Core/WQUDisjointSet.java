@@ -75,6 +75,25 @@ public class WQUDisjointSet {
         return out;
     }
 
+    /** Return the next sibling, i.e. next element in array sharing the parent as objIdx. If
+     * exhausted, return objIdx's first child, as determined by the order of elements in array. */
+    Integer nextOfKin(int objIdx) {
+        // find next sibling
+        for (int idx = objIdx; idx < objectArray.length; idx += 1) {
+            if (parentArray[objIdx] == parentArray[idx] && objIdx != idx) {
+                return idx;
+            }
+        }
+        // if exhausted, find first child
+        for (int idx = 0; idx < objectArray.length; idx += 1) {
+            if (objIdx == parentArray[idx]) {
+                return idx;
+            }
+        }
+        return null;
+    }
+
+
     /** Return index of root parent of the object located at objIdx. */
     int parent(int objIdx) {
         if (objIdx >= this.parentArray.length) {
@@ -88,7 +107,7 @@ public class WQUDisjointSet {
         }
     }
 
-    /** Return if the object at given idx position is connected to all other objects in the set.
+    /** Check if the object at given idx position is connected to all other objects in the set.
      * If true, it is implied that the disjoint set has been connected. */
     boolean connectedToAllObjects(int idx) {
         return parentArray[parent(idx)] == -1 * size();
