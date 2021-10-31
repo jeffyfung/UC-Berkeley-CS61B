@@ -26,7 +26,7 @@ public class Engine {
     TERenderer ter = new TERenderer();
     int turnCount = 0;
     int gameOver = 0;
-    String lastTileDescription = "nothing";
+    String lastTileDescription = "";
 
     /** Initial the world with empty tiles. */
     public Engine() {
