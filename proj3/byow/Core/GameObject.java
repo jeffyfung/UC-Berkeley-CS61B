@@ -14,16 +14,22 @@ public class GameObject {
         this.avatar = avatar;
     }
 
-    // TODO:　set bounds for move
-    // TODO: exit if run into exit door
-    public GameObject move(int dX, int dY) {
+    public int move(int dX, int dY) {
         Position _pos = new Position(pos.getX() + dX, pos.getY() + dY);
         TETile _lastTilePattern = ENGINE.getTilePattern(_pos);
+        // check if new pos is a wall
+        if (_lastTilePattern.equals(Engine.patternWall)) {
+            return 0;
+        }
+        // check if new pos is an exit
+        if (_lastTilePattern.equals(Engine.patternExit)) {
+            return 1;
+        }
         ENGINE.changeTilePattern(pos, lastTilePattern);
         ENGINE.changeTilePattern(_pos, avatar);
         pos = _pos;
         lastTilePattern = _lastTilePattern;
-        return this;
+        return 0;
     }
 
 }

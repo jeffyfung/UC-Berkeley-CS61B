@@ -11,17 +11,20 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
 
+import static byow.Core.GameMechanism.*;
+
 public class Engine {
     public static final int WORLD_WIDTH = 75;
     public static final int WORLD_HEIGHT = 30;
-    // TODO: combine roomFloor and hallwayFloor
-    static final TETile patternRoomWalls = Tileset.WALL;
+    static final TETile patternWall = Tileset.WALL;
     static final TETile patternRoomFloor = Tileset.FLOOR;
-    static final TETile patternHallwayWalls = Tileset.WALL;
     static final TETile patternHallwayFloor = Tileset.FLOOR;
+    static final TETile patternPlayerAvatar = Tileset.AVATAR;
+    static final TETile patternExit = Tileset.UNLOCKED_DOOR;
     Random random;
     TETile[][] tiles;
     TERenderer ter = new TERenderer();
+    int gameOver = 0;
 
     /** Initial the world with empty tiles. */
     public Engine() {
@@ -116,7 +119,7 @@ public class Engine {
         StdDraw.enableDoubleBuffering();
     }
 
-    private void drawMenu() {
+    void drawMenu() {
         Font titleFont = new Font("Helvetica", Font.BOLD, 40);
         StdDraw.setFont(titleFont);
         StdDraw.clear(Color.BLACK);
@@ -129,21 +132,20 @@ public class Engine {
         StdDraw.show();
     }
 
-    private void drawText(double x, double y, String str) {
+    void drawText(double x, double y, String str) {
         StdDraw.text(x, y, str);
         StdDraw.show();
     }
 
-    private void drawTextWithFont(double x, double y, String str, Font font) {
+    void drawTextWithFont(double x, double y, String str, Font font) {
         StdDraw.setFont(font);
         StdDraw.text(x, y, str);
         StdDraw.show();
     }
 
-    private void clearCanvasAndDrawText(double x, double y, String str) {
-        StdDraw.clear(Color.BLACK);
-        StdDraw.text(x, y, str);
-        StdDraw.show();
+    void clearCanvasAndDrawText(double x, double y, String str) {
+        StdDraw.clear(StdDraw.BLACK);
+        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0, str);
     }
 
     private char solicitCharInput() {
@@ -199,16 +201,22 @@ public class Engine {
         while (true) {
             char input = solicitCharInput();
             switch (input) {
-                case 'w' -> GameMechanism.PLAYER.move(0, 1);
-                case 's' -> GameMechanism.PLAYER.move(0, -1);
-                case 'a' -> GameMechanism.PLAYER.move(-1, 0);
-                case 'd' -> GameMechanism.PLAYER.move(1, 0);
+                case 'w' -> gameOver = moveGameObject(PLAYER, 0, 1);
+                case 's' -> gameOver = moveGameObject(PLAYER, 0, -1);
+                case 'a' -> gameOver = moveGameObject(PLAYER, -1, 0);
+                case 'd' -> gameOver = moveGameObject(PLAYER, 1, 0);
                 case ':' -> {
                     if (solicitCharInput() == 'q') {
-                        clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0, "Game Over");
+                        // save game?
                         System.exit(0);
                     }
                 }
+            }
+            if (gameOver == 1) {
+                StdDraw.setPenColor(StdDraw.WHITE);
+                clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0
+                        , "Congratulations! You have escaped the Dungeon!");
+                return;
             }
             ter.renderFrame(tiles);
         }

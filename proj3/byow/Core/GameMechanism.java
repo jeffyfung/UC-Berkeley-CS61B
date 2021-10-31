@@ -15,8 +15,8 @@ public class GameMechanism {
         ENGINE = engine;
         PLAYER = initializePlayer(Tileset.AVATAR);
         EXIT = initializeExit(rooms);
-        ENGINE.changeTilePattern(PLAYER.pos, Tileset.AVATAR);
-        ENGINE.changeTilePattern(EXIT, Tileset.UNLOCKED_DOOR);
+        ENGINE.changeTilePattern(PLAYER.pos, Engine.patternPlayerAvatar);
+        ENGINE.changeTilePattern(EXIT, Engine.patternExit);
     }
 
     private static Player initializePlayer(TETile avatar) {
@@ -55,7 +55,7 @@ public class GameMechanism {
         return exitPos;
     }
 
-    static GameObject moveGameObject(GameObject go, int dX, int dY) {
+    static int moveGameObject(GameObject go, int dX, int dY) {
         return go.move(dX, dY);
     }
 

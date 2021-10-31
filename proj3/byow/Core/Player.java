@@ -8,12 +8,4 @@ public class Player extends GameObject {
         super(pos, avatar);
         this.lastTilePattern = Engine.patternRoomFloor;
     }
-
-//    public Position getPos() {
-//        return this.pos;
-//    }
-//
-//    public TETile getAvatar() {
-//        return this.avatar;
-//    }
 }
