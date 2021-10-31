@@ -20,11 +20,13 @@ public class Engine {
     static final TETile patternRoomFloor = Tileset.FLOOR;
     static final TETile patternHallwayFloor = Tileset.FLOOR;
     static final TETile patternPlayerAvatar = Tileset.AVATAR;
-    static final TETile patternExit = Tileset.UNLOCKED_DOOR;
+    static final TETile patternExit = Tileset.LOCKED_DOOR;
     Random random;
     TETile[][] tiles;
     TERenderer ter = new TERenderer();
+    int turnCount = 0;
     int gameOver = 0;
+    String lastTileDescription = "nothing";
 
     /** Initial the world with empty tiles. */
     public Engine() {
@@ -137,6 +139,16 @@ public class Engine {
         StdDraw.show();
     }
 
+    void drawTextL(double x, double y, String str) {
+        StdDraw.textLeft(x, y, str);
+        StdDraw.show();
+    }
+
+    void drawTextR(double x, double y, String str) {
+        StdDraw.textRight(x, y, str);
+        StdDraw.show();
+    }
+
     void drawTextWithFont(double x, double y, String str, Font font) {
         StdDraw.setFont(font);
         StdDraw.text(x, y, str);
@@ -148,6 +160,13 @@ public class Engine {
         drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0, str);
     }
 
+    void drawHud(int health, String tileDescription, int turn) {
+        StdDraw.setPenColor(StdDraw.WHITE);
+        drawTextL(0.25, WORLD_HEIGHT - 0.25, String.format("Health: %d", health));
+        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT - 0.25, tileDescription);
+        drawTextR(WORLD_WIDTH - 0.25, WORLD_HEIGHT - 0.25, String.format("Turn: %d", turn));
+    }
+
     private char solicitCharInput() {
         while (true) {
             if (StdDraw.hasNextKeyTyped()) {
@@ -157,6 +176,24 @@ public class Engine {
             }
         }
     }
+
+    private String[] solicitCharAndMouseInput() {
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
+                System.out.println(input);
+                return new String[]{Character.toString(input), lastTileDescription};
+            }
+            int cursorX = (int) StdDraw.mouseX();
+            int cursorY = (int) StdDraw.mouseY();
+            String tileDescription = getTilePattern(cursorX, cursorY).description();
+            if (!tileDescription.equals(lastTileDescription)) {
+                lastTileDescription = tileDescription;
+                return new String[]{"`", tileDescription};
+            }
+        }
+    }
+
 
     private int solicitSeed() {
         StringBuilder sb = new StringBuilder();
@@ -196,21 +233,37 @@ public class Engine {
     }
 
     public void runInteractiveGameplay() {
-        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
+        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT + 1, 0, 0);
         ter.renderFrame(tiles);
+        String[] input = new String[] {"`", lastTileDescription};
         while (true) {
-            char input = solicitCharInput();
-            switch (input) {
-                case 'w' -> gameOver = moveGameObject(PLAYER, 0, 1);
-                case 's' -> gameOver = moveGameObject(PLAYER, 0, -1);
-                case 'a' -> gameOver = moveGameObject(PLAYER, -1, 0);
-                case 'd' -> gameOver = moveGameObject(PLAYER, 1, 0);
-                case ':' -> {
+            drawHud(PLAYER.health, input[1], turnCount);
+            input = solicitCharAndMouseInput();
+            switch (input[0]) {
+                case "w" -> {
+                    gameOver = moveGameObject(PLAYER, 0, 1);
+                    turnCount += 1;
+                }
+                case "s" -> {
+                    gameOver = moveGameObject(PLAYER, 0, -1);
+                    turnCount += 1;
+                }
+                case "a" -> {
+                    gameOver = moveGameObject(PLAYER, -1, 0);
+                    turnCount += 1;
+                }
+                case "d" -> {
+                    gameOver = moveGameObject(PLAYER, 1, 0);
+                    turnCount += 1;
+                }
+                case ":" -> {
                     if (solicitCharInput() == 'q') {
                         // save game?
                         System.exit(0);
                     }
                 }
+                case " " -> turnCount += 1;
+                case "`" -> {}
             }
             if (gameOver == 1) {
                 StdDraw.setPenColor(StdDraw.WHITE);
@@ -239,10 +292,16 @@ public class Engine {
     }
 
     public TETile getTilePattern(Position pos) {
+        if (pos.getX() >= WORLD_WIDTH && pos.getY() >= WORLD_HEIGHT) {
+            return Tileset.NOTHING;
+        }
         return tiles[pos.getX()][pos.getY()];
     }
 
     public TETile getTilePattern(int x, int y) {
+        if (x >= WORLD_WIDTH || y >= WORLD_HEIGHT) {
+            return Tileset.NOTHING;
+        }
         return tiles[x][y];
     }
 
