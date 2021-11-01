@@ -86,31 +86,22 @@ public class Engine {
      * @param input the input string to feed to your program
      * @return the 2D TETile[][] representing the state of the world
      */
+    // TODO: cater for other inputs e.g. L, Q, S etc
     public TETile[][] interactWithInputString(String input) {
-        InputSource inputSource = new StringInputDevice(input.toUpperCase());
-        Integer seed = null;
-        boolean startSeed = false;
-        while (inputSource.possibleNextInput()) {
-            char c = inputSource.getNextKey();
-            if (c == 'N') {
-                startSeed = true;
-                continue;
-            } else if (c == 'S') {
-                startSeed = false;
+        InputSource inputSource = new StringInputDevice(input.toLowerCase());
+        switch (collectMenuOption(inputSource)) {
+            case 'n' -> {
+                int seed = collectSeedFromInputString(inputSource);
+                return runStaticEngine(seed, inputSource);
             }
-            // TODO: cater for other inputs e.g. L, Q, S etc
-            if (startSeed) {
-                Integer num = Character.getNumericValue(c);
-                seed = seed == null ? num : seed * 10 + num;
+            case 'l' -> {
+                // load game; add later
+                return null;
+            }
+            default -> {
+                return null;
             }
         }
-        if (startSeed || seed == null) {
-            System.out.println("Input must contain a positive integer seed phases bounded by N " +
-                    "and S, for example, N123S. Please re-enter.");
-            return null;
-        }
-        runEngine(seed);
-        return tiles;
     }
 
     private void drawSetting() {
@@ -220,9 +211,73 @@ public class Engine {
         }
     }
 
+    private char collectMenuOption(InputSource inputSource) {
+        while (inputSource.possibleNextInput()) {
+            char c = inputSource.getNextKey();
+            switch (c) {
+                case 'n', 'l', 'q' -> {
+                    return c;
+                }
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    private int collectSeedFromInputString(InputSource inputSource) {
+        int seed = 0;
+        while (inputSource.possibleNextInput()) {
+            char c = inputSource.getNextKey();
+            if (c == 's') {
+                return seed;
+            } else if (Character.isAlphabetic(c)) {
+                seed = 0;
+            } else {
+                seed = seed * 10 + Character.getNumericValue(c);
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
     public void runInteractiveEngine(int seed) {
         runEngine(seed);
         runInteractiveGameplay();
+    }
+
+    public TETile[][] runStaticEngine(int seed, InputSource inputSource) {
+        runEngine(seed);
+        while (inputSource.possibleNextInput()) {
+            char c = inputSource.getNextKey();
+            switch (c) {
+                case 'w' -> {
+                    gameOver = moveGameObject(PLAYER, 0, 1);
+                    turnCount += 1;
+                }
+                case 's' -> {
+                    gameOver = moveGameObject(PLAYER, 0, -1);
+                    turnCount += 1;
+                }
+                case 'a' -> {
+                    gameOver = moveGameObject(PLAYER, -1, 0);
+                    turnCount += 1;
+                }
+                case 'd' -> {
+                    gameOver = moveGameObject(PLAYER, 1, 0);
+                    turnCount += 1;
+                }
+                case ':' -> {
+                    if (inputSource.getNextKey() == 'q') {
+                        // save game?
+                        System.exit(0);
+                    }
+                }
+                case ' ' -> turnCount += 1;
+            }
+            if (gameOver == 1) {
+                System.out.println("Congratulations! You have escaped the Dungeon!");
+                System.exit(0);
+            }
+        }
+        return tiles;
     }
 
     public void runEngine(int seed) {
@@ -304,5 +359,4 @@ public class Engine {
         }
         return tiles[x][y];
     }
-
 }
