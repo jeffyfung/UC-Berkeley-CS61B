@@ -3,7 +3,12 @@ package byow.Core;
 import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 
+import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import static byow.Core.PersistenceUtils.*;
 
 public class GameMechanism {
     static Engine ENGINE;
@@ -59,11 +64,17 @@ public class GameMechanism {
         return go.move(dX, dY);
     }
 
-//    private static void drawPlayer() {
-//        TILES[PLAYER.getPlayerPos().getX()][PLAYER.getPlayerPos().getY()] = PLAYER.getAvatar();
-//    }
-//
-//    private static void drawExit(TETile tile) {
-//        TILES[EXIT.getX()][EXIT.getY()] = tile;
-//    }
+    static void saveGameObjects() {
+        HashMap<String, Serializable> gameObjects = new HashMap<>();
+        gameObjects.put("player", PLAYER);
+        gameObjects.put("exit", EXIT);
+        writeObject(join(Engine.GAMESAVE, "gameObjects"), gameObjects);
+    }
+
+    static void loadGameObjects(File file, Engine engine) {
+        ENGINE = engine;
+        HashMap<String, Serializable> gameObjects = readObject(file, HashMap.class);
+        PLAYER = (Player) gameObjects.get("player");
+        EXIT = (Position) gameObjects.get("position");
+    }
 }

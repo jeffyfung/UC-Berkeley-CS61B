@@ -8,10 +8,15 @@ import byow.TileEngine.Tileset;
 import edu.princeton.cs.introcs.StdDraw;
 
 import java.awt.*;
+import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
-import static byow.Core.GameMechanism.*;
+import static byow.Core.GameMechanism.PLAYER;
+import static byow.Core.GameMechanism.moveGameObject;
+import static byow.Core.PersistenceUtils.*;
 
 public class Engine {
     public static final int WORLD_WIDTH = 75;
@@ -21,6 +26,8 @@ public class Engine {
     static final TETile patternHallwayFloor = Tileset.FLOOR;
     static final TETile patternPlayerAvatar = Tileset.AVATAR;
     static final TETile patternExit = Tileset.LOCKED_DOOR;
+    static final File CWD = new File(System.getProperty("user.dir"));
+    static final File GAMESAVE = join(CWD, ".gamesave");
     Random random;
     TETile[][] tiles;
     TERenderer ter = new TERenderer();
@@ -28,7 +35,7 @@ public class Engine {
     int gameOver = 0;
     String lastTileDescription = "";
 
-    /** Initial the world with empty tiles. */
+    /** Initialize the world with empty tiles. */
     public Engine() {
         this.tiles = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
         for (int x = 0; x < WORLD_WIDTH; x += 1) {
@@ -43,6 +50,7 @@ public class Engine {
      * including inputs from the main menu.
      */
     public void interactWithKeyboard() {
+        setUpPersistence();
         drawSetting();
         drawMenu();
         while (true) {
@@ -55,9 +63,10 @@ public class Engine {
                     return;
                 }
                 case 'l' -> {
-                    // load game; add later
-                    clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5 * 4
-                            , "tbi");
+                    boolean loadStatus = loadGame(true);
+                    if (loadStatus) {
+                        runInteractiveGameplay();
+                    }
                     return;
                 }
                 case 'q' -> System.exit(0);
@@ -88,6 +97,7 @@ public class Engine {
      */
     // TODO: cater for other inputs e.g. L, Q, S etc
     public TETile[][] interactWithInputString(String input) {
+        setUpPersistence();
         InputSource inputSource = new StringInputDevice(input.toLowerCase());
         switch (collectMenuOption(inputSource)) {
             case 'n' -> {
@@ -95,8 +105,12 @@ public class Engine {
                 return runStaticEngine(seed, inputSource);
             }
             case 'l' -> {
-                // load game; add later
-                return null;
+                boolean loadStatus = loadGame(false);
+                if (loadStatus) {
+                    return runStaticGamePlay(inputSource);
+                } else {
+                    return null;
+                }
             }
             default -> {
                 return null;
@@ -238,56 +252,24 @@ public class Engine {
         throw new IllegalArgumentException();
     }
 
-    public void runInteractiveEngine(int seed) {
+    void runInteractiveEngine(int seed) {
         runEngine(seed);
         runInteractiveGameplay();
     }
 
-    public TETile[][] runStaticEngine(int seed, InputSource inputSource) {
+    TETile[][] runStaticEngine(int seed, InputSource inputSource) {
         runEngine(seed);
-        while (inputSource.possibleNextInput()) {
-            char c = inputSource.getNextKey();
-            switch (c) {
-                case 'w' -> {
-                    gameOver = moveGameObject(PLAYER, 0, 1);
-                    turnCount += 1;
-                }
-                case 's' -> {
-                    gameOver = moveGameObject(PLAYER, 0, -1);
-                    turnCount += 1;
-                }
-                case 'a' -> {
-                    gameOver = moveGameObject(PLAYER, -1, 0);
-                    turnCount += 1;
-                }
-                case 'd' -> {
-                    gameOver = moveGameObject(PLAYER, 1, 0);
-                    turnCount += 1;
-                }
-                case ':' -> {
-                    if (inputSource.getNextKey() == 'q') {
-                        // save game?
-                        System.exit(0);
-                    }
-                }
-                case ' ' -> turnCount += 1;
-            }
-            if (gameOver == 1) {
-                System.out.println("Congratulations! You have escaped the Dungeon!");
-                System.exit(0);
-            }
-        }
-        return tiles;
+        return runStaticGamePlay(inputSource);
     }
 
-    public void runEngine(int seed) {
+    void runEngine(int seed) {
         this.random = new Random(seed);
         ArrayList<Room> rooms = Room.buildRooms(this);
         Room.connectRooms(this, rooms);
         GameMechanism.initializeGameplay(this, rooms);
     }
 
-    public void runInteractiveGameplay() {
+    void runInteractiveGameplay() {
         ter.initialize(WORLD_WIDTH, WORLD_HEIGHT + 1, 0, 0);
         ter.renderFrame(tiles);
         String[] input = new String[] {"`", lastTileDescription};
@@ -314,6 +296,7 @@ public class Engine {
                 case ":" -> {
                     if (solicitCharInput() == 'q') {
                         // save game?
+                        saveGame();
                         System.exit(0);
                     }
                 }
@@ -321,6 +304,7 @@ public class Engine {
                 case "`" -> {}
             }
             if (gameOver == 1) {
+                System.out.println("Congratulations! You have escaped the Dungeon!");
                 StdDraw.setPenColor(StdDraw.WHITE);
                 clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0
                         , "Congratulations! You have escaped the Dungeon!");
@@ -328,6 +312,43 @@ public class Engine {
             }
             ter.renderFrame(tiles);
         }
+    }
+
+    TETile[][] runStaticGamePlay(InputSource inputSource) {
+        while (inputSource.possibleNextInput()) {
+            char c = inputSource.getNextKey();
+            switch (c) {
+                case 'w' -> {
+                    gameOver = moveGameObject(PLAYER, 0, 1);
+                    turnCount += 1;
+                }
+                case 's' -> {
+                    gameOver = moveGameObject(PLAYER, 0, -1);
+                    turnCount += 1;
+                }
+                case 'a' -> {
+                    gameOver = moveGameObject(PLAYER, -1, 0);
+                    turnCount += 1;
+                }
+                case 'd' -> {
+                    gameOver = moveGameObject(PLAYER, 1, 0);
+                    turnCount += 1;
+                }
+                case ':' -> {
+                    if (inputSource.getNextKey() == 'q') {
+                        // save game?
+                        saveGame();
+                        System.exit(0);
+                    }
+                }
+                case ' ' -> turnCount += 1;
+            }
+            if (gameOver == 1) {
+                System.out.println("Congratulations! You have escaped the Dungeon!");
+                System.exit(0);
+            }
+        }
+        return tiles;
     }
 
     public String toString() {
@@ -358,5 +379,43 @@ public class Engine {
             return Tileset.NOTHING;
         }
         return tiles[x][y];
+    }
+
+    static void setUpPersistence() {
+        GAMESAVE.mkdir();
+    }
+
+    void saveGame() {
+        saveEngineState();
+        GameMechanism.saveGameObjects();
+    }
+
+    void saveEngineState() {
+        HashMap<String, Serializable> engineState = new HashMap<>();
+        engineState.put("random", random);
+        engineState.put("tiles", tiles);
+        engineState.put("turnCount", turnCount);
+        writeObject(join(GAMESAVE, "engineState"), engineState);
+    }
+
+    boolean loadGame(boolean drawMsg) {
+        if (GAMESAVE.list().length == 0) {
+            System.out.println("There is no saved game");
+            if (drawMsg) {
+                clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5 * 4
+                        , "There is no saved game");
+            }
+            return false;
+        }
+        loadEngineState(join(GAMESAVE, "engineState"));
+        GameMechanism.loadGameObjects(join(GAMESAVE, "gameObjects"), this);
+        return true;
+    }
+
+    void loadEngineState(File file) {
+        HashMap<String, Serializable> engineState = readObject(file, HashMap.class);
+        random = (Random) engineState.get("random");
+        tiles = (TETile[][]) engineState.get("tiles");
+        turnCount = (int) engineState.get("turnCount");
     }
 }

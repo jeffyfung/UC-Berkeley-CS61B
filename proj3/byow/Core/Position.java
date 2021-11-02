@@ -1,6 +1,8 @@
 package byow.Core;
 
-public class Position {
+import java.io.Serializable;
+
+public class Position implements Serializable {
     /** A size 2 array tracking the x and y coordinates of the position. */
     int[] xy;
 
