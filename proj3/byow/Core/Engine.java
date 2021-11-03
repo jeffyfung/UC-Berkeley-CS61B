@@ -21,6 +21,8 @@ import static byow.Core.PersistenceUtils.*;
 public class Engine {
     public static final int WORLD_WIDTH = 75;
     public static final int WORLD_HEIGHT = 30;
+    static final int WORLD_XOFFSET = 0;
+    static final int WORLD_YOFFSET = 2;
     static final TETile patternWall = Tileset.WALL;
     static final TETile patternRoomFloor = Tileset.FLOOR;
     static final TETile patternHallwayFloor = Tileset.FLOOR;
@@ -166,10 +168,12 @@ public class Engine {
     }
 
     void drawHud(int health, String tileDescription, int turn) {
+        StdDraw.setPenColor(StdDraw.GRAY);
+        StdDraw.filledRectangle(WORLD_WIDTH / 2.0, 0.75, WORLD_WIDTH / 2.0, 0.75);
         StdDraw.setPenColor(StdDraw.WHITE);
-        drawTextL(0.25, WORLD_HEIGHT - 0.25, String.format("Health: %d", health));
-        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT - 0.25, tileDescription);
-        drawTextR(WORLD_WIDTH - 0.25, WORLD_HEIGHT - 0.25, String.format("Turn: %d", turn));
+        drawTextL(0.5, 0.75, String.format("Health: %d", health));
+        drawText(WORLD_WIDTH / 2.0, 0.75, tileDescription);
+        drawTextR(WORLD_WIDTH - 0.25, 0.75, String.format("Turn: %d", turn));
     }
 
     private char solicitCharInput() {
@@ -189,16 +193,20 @@ public class Engine {
                 System.out.println(input);
                 return new String[]{Character.toString(input), lastTileDescription};
             }
-            int cursorX = (int) StdDraw.mouseX();
-            int cursorY = (int) StdDraw.mouseY();
-            String tileDescription = getTilePattern(cursorX, cursorY).description();
+            int cursorX = (int) StdDraw.mouseX() - WORLD_XOFFSET;
+            int cursorY = (int) StdDraw.mouseY() - WORLD_YOFFSET;
+            String tileDescription;
+            if (cursorX < 0 || cursorY < 0) {
+                tileDescription = Tileset.NOTHING.description();
+            } else {
+                tileDescription = getTilePattern(cursorX, cursorY).description();
+            }
             if (!tileDescription.equals(lastTileDescription)) {
                 lastTileDescription = tileDescription;
                 return new String[]{"`", tileDescription};
             }
         }
     }
-
 
     private int solicitSeed() {
         StringBuilder sb = new StringBuilder();
@@ -270,7 +278,8 @@ public class Engine {
     }
 
     void runInteractiveGameplay() {
-        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT + 1, 0, 0);
+        ter.initialize(WORLD_WIDTH + WORLD_XOFFSET, WORLD_HEIGHT + WORLD_YOFFSET
+                , WORLD_XOFFSET, WORLD_YOFFSET);
         ter.renderFrame(tiles);
         String[] input = new String[] {"`", lastTileDescription};
         while (true) {
