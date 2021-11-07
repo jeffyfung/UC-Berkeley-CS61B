@@ -218,7 +218,7 @@ public class Engine {
      */
     void clearCanvasAndDrawText(double x, double y, String str) {
         StdDraw.clear(StdDraw.BLACK);
-        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0, str);
+        drawText(x, y, str);
     }
 
     /**
@@ -236,6 +236,20 @@ public class Engine {
         drawText(WORLD_WIDTH / 3.0, 0.75, String.format("Turn: %d", turn));
         drawText(WORLD_WIDTH * 2 / 3.0, 0.75, tileDescription);
         drawTextR(WORLD_WIDTH - 0.25, 0.75, java.time.LocalDate.now().toString());
+    }
+
+    void drawGameOverDisplay() {
+        Font font = new Font("Serif", Font.BOLD, 40);
+        StdDraw.setPenColor(StdDraw.BOOK_RED);
+        StdDraw.setFont(font);
+        clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 4.5 / 5.0,
+                "Congratulations! You have escaped the Dungeon!");
+
+        String leaderBoard = "leader board placeholder";
+        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 3.0 / 5.0, leaderBoard);
+
+        String tryAgain = "Would You Like To Try Again? Y/N";
+        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 1.0 / 5.0, tryAgain);
     }
 
     /**
@@ -318,12 +332,13 @@ public class Engine {
                 tileDescription = Tileset.NOTHING.description();
             } else {
                 tileDescription = getTilePattern(cursorX, cursorY).description();
-                if (tileDescription.equals("player")) {
+                if (tileDescription.equals("Player")) {
                     tileDescription = playerName;
                 }
             }
             if (!tileDescription.equals(lastTileDescription)) {
                 lastTileDescription = tileDescription;
+
                 return new String[]{"`", tileDescription};
             }
         }
@@ -488,7 +503,6 @@ public class Engine {
                 }
                 case ":" -> {
                     if (solicitCharInput() == 'q') {
-                        // save game?
                         saveGame();
                         System.exit(0);
                     }
@@ -498,10 +512,17 @@ public class Engine {
             }
             if (gameOver == 1) {
                 System.out.println("Congratulations! You have escaped the Dungeon!");
-                StdDraw.setPenColor(StdDraw.WHITE);
-                clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0
-                        , "Congratulations! You have escaped the Dungeon!");
-                return;
+                drawGameOverDisplay();
+                char restart;
+                while (true) {
+                    restart = solicitCharInput();
+                    if (restart == 'y') {
+                        Main.main(new String[]{});
+                        return;
+                    } else if (restart == 'n') {
+                        System.exit(0);
+                    }
+                }
             }
             ter.renderFrame(tiles);
         }
@@ -534,7 +555,6 @@ public class Engine {
                 }
                 case ':' -> {
                     if (inputSource.getNextKey() == 'q') {
-                        // save game?
                         saveGame();
                         System.exit(0);
                     }
@@ -604,6 +624,7 @@ public class Engine {
         engineState.put("random", random);
         engineState.put("tiles", tiles);
         engineState.put("turnCount", turnCount);
+        engineState.put("playerName", playerName);
         writeObject(join(GAMESAVE, "engineState"), engineState);
     }
 
@@ -636,5 +657,6 @@ public class Engine {
         random = (Random) engineState.get("random");
         tiles = (TETile[][]) engineState.get("tiles");
         turnCount = (int) engineState.get("turnCount");
+        playerName = (String) engineState.get("playerName");
     }
 }

@@ -17,7 +17,7 @@ import java.awt.Color;
  */
 
 public class Tileset {
-    public static final TETile AVATAR = new TETile('@', Color.white, Color.black, "player");
+    public static final TETile AVATAR = new TETile('@', Color.white, Color.black, "Player");
     public static final TETile WALL = new TETile('#', new Color(216, 128, 128), Color.darkGray,
             "Wall");
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
@@ -27,7 +27,7 @@ public class Tileset {
     public static final TETile WATER = new TETile('≈', Color.blue, Color.black, "Water");
     public static final TETile FLOWER = new TETile('❀', Color.magenta, Color.pink, "Flower");
     public static final TETile LOCKED_DOOR = new TETile('█', Color.orange, Color.black,
-            "Locked Door");
+            "Exit");
     public static final TETile UNLOCKED_DOOR = new TETile('▢', Color.orange, Color.black,
             "Unlocked Door");
     public static final TETile SAND = new TETile('▒', Color.yellow, Color.black, "Sand");
