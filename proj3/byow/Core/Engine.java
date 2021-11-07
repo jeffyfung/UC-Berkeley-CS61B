@@ -48,7 +48,7 @@ public class Engine {
     /** Tracks the number of turn passed. Do not reset when loading a game. */
     int turnCount = 0;
     /** Tracks whether the game is finished. */
-    boolean gameOver = false;
+    int gameOver = 0;
     String lastTileDescription = "";
 
     /** Constructor for Engine objects. Initialize the game state with empty tiles. */
@@ -404,7 +404,7 @@ public class Engine {
                 case " " -> turnCount += 1;
                 case "`" -> {}
             }
-            if (gameOver) {
+            if (gameOver == 1) {
                 System.out.println("Congratulations! You have escaped the Dungeon!");
                 StdDraw.setPenColor(StdDraw.WHITE);
                 clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0
@@ -449,7 +449,7 @@ public class Engine {
                 }
                 case ' ' -> turnCount += 1;
             }
-            if (gameOver) {
+            if (gameOver == 1) {
                 System.out.println("Congratulations! You have escaped the Dungeon!");
                 System.exit(0);
             }

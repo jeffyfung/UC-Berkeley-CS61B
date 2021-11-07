@@ -81,7 +81,7 @@ public class GameMechanism {
      * @param dY y-axis displacement of game object
      * @return  whether the movement leads to the end of a game
      */
-    static boolean moveGameObject(GameObject go, int dX, int dY) {
+    static int moveGameObject(GameObject go, int dX, int dY) {
         return go.move(dX, dY);
     }
 
