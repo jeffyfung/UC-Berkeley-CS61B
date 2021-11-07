@@ -31,6 +31,12 @@ public class Engine {
     static final int WORLD_XOFFSET = 0;
     /** Y-axis distance between bottom of display window and bottom of frame to draw tiles. */
     static final int WORLD_YOFFSET = 2;
+    /** Coordinates of center, half-width and half-height of the 'New Game' option box on menu. */
+    static final double[] optionN = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 + 2, 8, 1.5};
+    /** Coordinates of center, half-width and half-height of the 'Load Game' option box on menu. */
+    static final double[] optionL = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 2, 8, 1.5};
+    /** Coordinates of center, half-width and half-height of the 'Quit' option box on menu. */
+    static final double[] optionQ = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 6, 8, 1.5};
     static final TETile patternWall = Tileset.WALL;
     static final TETile patternRoomFloor = Tileset.FLOOR;
     static final TETile patternHallwayFloor = Tileset.FLOOR;
@@ -65,16 +71,15 @@ public class Engine {
      * Run the game engine. This method should handle all inputs, including inputs from the main
      * menu. Uses "wasd" keys to move player. Press ":q" to save game and quit.
      */
-    // TODO: cater for other inputs e.g. L, Q, S etc
     public void interactWithKeyboard() {
         setUpPersistence();
         drawSetting();
         drawMenu();
         while (true) {
-            char inputChar = solicitCharInput();
+            char inputChar = solicitCharOrMouseInputForMenu();
             switch (inputChar) {
                 case 'n' -> {
-                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5 * 4
+                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
                             , "Enter Seed Then Press s");
                     runInteractiveEngine(solicitSeed());
                     return;
@@ -136,15 +141,23 @@ public class Engine {
 
     /** Draw game menu. */
     void drawMenu() {
-        Font titleFont = new Font("Helvetica", Font.BOLD, 40);
+        Font titleFont = new Font("Serif", Font.BOLD, 60);
+        StdDraw.setPenColor(StdDraw.BOOK_RED);
         StdDraw.setFont(titleFont);
         StdDraw.clear(Color.BLACK);
-        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 3 / 4.0, "Simple Dungeon Game");
-        Font optionsFont = new Font("Helvetica", Font.PLAIN, 25);
+        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT - 5, "Simple Dungeon Game");
+
+        Font optionsFont = new Font("Serif", Font.ITALIC, 25);
         StdDraw.setFont(optionsFont);
-        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0, "New Game (N)");
-        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5, "Load Game (L)");
-        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5*2, "Quit (Q)");
+        StdDraw.setPenRadius(0.01);
+
+        StdDraw.rectangle(optionN[0], optionN[1], optionN[2], optionN[3]);
+        StdDraw.text(optionN[0], optionN[1], "New Game (N)");
+        StdDraw.rectangle(optionL[0], optionL[1], optionL[2], optionL[3]);
+        StdDraw.text(optionL[0], optionL[1], "Load Game (L)");
+        StdDraw.rectangle(optionQ[0], optionQ[1], optionQ[2], optionQ[3]);
+        StdDraw.text(optionQ[0], optionQ[1], "Quit (Q)");
+
         StdDraw.show();
     }
 
@@ -236,12 +249,58 @@ public class Engine {
     }
 
     /**
+     * Gets each keyboard input as character. Converts to lower case alphabets if applicable. If
+     * mouse is clicked, return the user input for menu options, or spacebar.
+     * @return user input
+     */
+    private char solicitCharOrMouseInputForMenu() {
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
+                System.out.println(input);
+                return input;
+            }
+            if (StdDraw.isMousePressed()) {
+                return solicitInputFromMouseForMenu();
+            }
+        }
+    }
+
+    /**
+     * Gets user input according to the menu options. Return spacebar if the mouse is located
+     * outside of boxes represented by all options.
+     * @return user input represented by the mouse location
+     */
+    private char solicitInputFromMouseForMenu() {
+        double x = StdDraw.mouseX();
+        double y = StdDraw.mouseY();
+        if (Double.compare(optionN[0] - optionN[2], x) <= 0
+                && Double.compare(x, optionN[0] + optionN[2]) <= 0
+                && Double.compare(optionN[1] - optionN[3], y) <= 0
+                && Double.compare(y, optionN[1] + optionN[3]) <= 0) {
+            return 'n';
+        } else if (Double.compare(optionL[0] - optionL[2], x) <= 0
+                && Double.compare(x, optionL[0] + optionL[2]) <= 0
+                && Double.compare(optionL[1] - optionL[3], y) <= 0
+                && Double.compare(y, optionL[1] + optionL[3]) <= 0) {
+            return 'l';
+        } else if (Double.compare(optionQ[0] - optionQ[2], x) <= 0
+                && Double.compare(x, optionQ[0] + optionQ[2]) <= 0
+                && Double.compare(optionQ[1] - optionQ[3], y) <= 0
+                && Double.compare(y, optionQ[1] + optionQ[3]) <= 0) {
+            return 'q';
+        } else {
+            return ' ';
+        }
+    }
+
+    /**
      * Gets each keyboard input from user and description of the tile that the mouse cursor is
      * currently over. The function only returns when there is any unparsed input or a change in
      * tile description.
      * @return input character and description of the mouse-over tile
      */
-    private String[] solicitCharAndMouseInput() {
+    private String[] solicitCharInputAndCursorLocation() {
         while (true) {
             if (StdDraw.hasNextKeyTyped()) {
                 char input = Character.toLowerCase(StdDraw.nextKeyTyped());
@@ -278,7 +337,7 @@ public class Engine {
                 try {
                     return Integer.parseUnsignedInt(sb.toString());
                 } catch (NumberFormatException e) {
-                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5 * 6
+                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 13
                             , "Accept Positive Integer Only! Try Again!");
                     StdDraw.show();
                     sb = new StringBuilder();
@@ -286,8 +345,8 @@ public class Engine {
             } else {
                 sb.append(input);
                 drawMenu();
-                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5 * 5, sb.toString());
-                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5 * 4
+                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5, sb.toString());
+                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
                         , "Enter Seed Then Press s");
                 StdDraw.show();
             }
@@ -376,7 +435,7 @@ public class Engine {
         String[] input = new String[] {"`", lastTileDescription};
         while (true) {
             drawHud(PLAYER.health, input[1], turnCount);
-            input = solicitCharAndMouseInput();
+            input = solicitCharInputAndCursorLocation();
             switch (input[0]) {
                 case "w" -> {
                     gameOver = moveGameObject(PLAYER, 0, 1);
