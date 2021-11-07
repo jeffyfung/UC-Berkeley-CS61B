@@ -51,6 +51,8 @@ public class Engine {
     TETile[][] tiles;
     /** Renderer for tiles. */
     TERenderer ter = new TERenderer();
+    /** Name of player. */
+    String playerName = "player1";
     /** Tracks the number of turn passed. Do not reset when loading a game. */
     int turnCount = 0;
     /** Tracks whether the game is finished. */
@@ -79,9 +81,9 @@ public class Engine {
             char inputChar = solicitCharOrMouseInputForMenu();
             switch (inputChar) {
                 case 'n' -> {
-                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
-                            , "Enter Seed Then Press s");
-                    runInteractiveEngine(solicitSeed());
+                    int seed = solicitSeed();
+                    playerName = solicitPlayerName();
+                    runInteractiveEngine(seed);
                     return;
                 }
                 case 'l' -> {
@@ -98,10 +100,11 @@ public class Engine {
 
     /**
      * Run the game engine. The engine should behave exactly as if the user typed these characters
-     * into the engine using interactWithKeyboard. If the first valid input character is "l", the
-     * last saved game state, if any, will be loaded. For instance, the call
-     * interactWithInputString("n123sss:q") followed by the call interactWithInputString("lww")
-     * should yield the exact same world state as interactWithInputString("n123sssww").
+     * into the engine using interactWithKeyboard(), except the game will not ask for player name.
+     * If the first valid input character is "l", the last saved game state, if any, will be
+     * loaded. For instance, the call interactWithInputString("n123sss:q") followed by the call
+     * interactWithInputString("lww") should yield the exact same world state as
+     * interactWithInputString("n123sssww").
      * @param input the input string to feed to your program
      * @return the 2D TETile[][] representing the state of the world
      */
@@ -147,7 +150,7 @@ public class Engine {
         StdDraw.clear(Color.BLACK);
         StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT - 5, "Simple Dungeon Game");
 
-        Font optionsFont = new Font("Serif", Font.ITALIC, 25);
+        Font optionsFont = new Font("Serif", Font.BOLD, 25);
         StdDraw.setFont(optionsFont);
         StdDraw.setPenRadius(0.01);
 
@@ -331,6 +334,8 @@ public class Engine {
     private int solicitSeed() {
         StringBuilder sb = new StringBuilder();
         char input;
+        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                , "Enter Seed Then Press s");
         while (true) {
             input = solicitCharInput();
             if (input == 's') {
@@ -351,6 +356,31 @@ public class Engine {
                 StdDraw.show();
             }
         }
+    }
+
+    /**
+     * Get player name from user. Name must be followed by '/'.
+     * @return playerName
+     */
+    private String solicitPlayerName() {
+        StringBuilder sb = new StringBuilder();
+        char input;
+        drawMenu();
+        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10, "Enter Your Name Then Press /:");
+        while (true) {
+            input = solicitCharInput();
+            if (input == '/') {
+                return sb.toString();
+            } else {
+                sb.append(input);
+                drawMenu();
+                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5, sb.toString());
+                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                        , "Enter Your Name Then Press /:");
+                StdDraw.show();
+            }
+        }
+
     }
 
     /**
