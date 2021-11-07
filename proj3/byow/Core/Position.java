@@ -2,6 +2,9 @@ package byow.Core;
 
 import java.io.Serializable;
 
+/**
+ * Class to represent locations in game state.
+ */
 public class Position implements Serializable {
     /** A size 2 array tracking the x and y coordinates of the position. */
     int[] xy;

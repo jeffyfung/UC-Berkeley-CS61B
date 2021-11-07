@@ -1,6 +1,5 @@
 package byow.Core;
 
-import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 
 import java.io.File;
@@ -10,21 +9,31 @@ import java.util.HashMap;
 
 import static byow.Core.PersistenceUtils.*;
 
+/**
+ * Class to allow game objects, which do not include rooms and hallways, to interact with game
+ * state and among themselves.
+ */
 public class GameMechanism {
     static Engine ENGINE;
     static Player PLAYER;
+    /** A door. Game ends successfully if player reaches the exit. */
     static Position EXIT;
+    /** Minimum distance between player and exit at initialization. */
     static final float MIN_DIST_PLAYER_EXIT = 20;
 
+    /**
+     * Constructor of the class.
+     */
     public static void initializeGameplay(Engine engine, ArrayList<Room> rooms) {
         ENGINE = engine;
-        PLAYER = initializePlayer(Tileset.AVATAR);
+        PLAYER = initializePlayer();
         EXIT = initializeExit(rooms);
         ENGINE.changeTilePattern(PLAYER.pos, Engine.patternPlayerAvatar);
         ENGINE.changeTilePattern(EXIT, Engine.patternExit);
     }
 
-    private static Player initializePlayer(TETile avatar) {
+    /** Randomly initializes player object. Player must be placed within the walls. */
+    private static Player initializePlayer() {
         int x = 0;
         int y = 0;
         while (!ENGINE.getTilePattern(x, y).equals(Tileset.FLOOR)) {
@@ -32,9 +41,14 @@ public class GameMechanism {
             y = ENGINE.random.nextInt(Engine.WORLD_HEIGHT);
         }
         Position pos = new Position(x,y);
-        return new Player(pos, avatar);
+        return new Player(pos, Tileset.AVATAR);
     }
 
+    /**
+     * Randomly initializes exit. Exit must be placed on a wall of a room.
+     * @param rooms rooms
+     * @return position of exit
+     */
     private static Position initializeExit(ArrayList<Room> rooms) {
         Room randRoom = rooms.get(ENGINE.random.nextInt(rooms.size()));
         int x = randRoom.lowerLeft.getX();
@@ -60,10 +74,18 @@ public class GameMechanism {
         return exitPos;
     }
 
-    static int moveGameObject(GameObject go, int dX, int dY) {
+    /**
+     * Moves game object.
+     * @param go game object to be moved
+     * @param dX x-axis displacement of game object
+     * @param dY y-axis displacement of game object
+     * @return  whether the movement leads to the end of a game
+     */
+    static boolean moveGameObject(GameObject go, int dX, int dY) {
         return go.move(dX, dY);
     }
 
+    /** Serializes and saves game objects to a .gamesave/gameObjects file. */
     static void saveGameObjects() {
         HashMap<String, Serializable> gameObjects = new HashMap<>();
         gameObjects.put("player", PLAYER);
@@ -71,6 +93,11 @@ public class GameMechanism {
         writeObject(join(Engine.GAMESAVE, "gameObjects"), gameObjects);
     }
 
+    /**
+     * Load game objects from file.
+     * @param file file to load game from
+     * @param engine engine that the game runs on
+     */
     static void loadGameObjects(File file, Engine engine) {
         ENGINE = engine;
         HashMap<String, Serializable> gameObjects = readObject(file, HashMap.class);
