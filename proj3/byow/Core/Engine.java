@@ -52,7 +52,7 @@ public class Engine {
     /** Renderer for tiles. */
     TERenderer ter = new TERenderer();
     /** Name of player. */
-    String playerName = "player1";
+    String playerName;
     /** Tracks the number of turn passed. Do not reset when loading a game. */
     int turnCount = 0;
     /** Tracks whether the game is finished. */
@@ -223,7 +223,7 @@ public class Engine {
 
     /**
      * Draw HUD at the bottom of the window during gameplay. The HUD displays information about
-     * player's health, description of a tile, and the number of turn passed.
+     * player's health, number of turn passed, description of a tile and current date.
      * @param health health of the player
      * @param tileDescription description of a tile
      * @param turn number of turn passed
@@ -233,8 +233,9 @@ public class Engine {
         StdDraw.filledRectangle(WORLD_WIDTH / 2.0, 0.75, WORLD_WIDTH / 2.0, 0.75);
         StdDraw.setPenColor(StdDraw.WHITE);
         drawTextL(0.5, 0.75, String.format("Health: %d", health));
-        drawText(WORLD_WIDTH / 2.0, 0.75, tileDescription);
-        drawTextR(WORLD_WIDTH - 0.25, 0.75, String.format("Turn: %d", turn));
+        drawText(WORLD_WIDTH / 3.0, 0.75, String.format("Turn: %d", turn));
+        drawText(WORLD_WIDTH * 2 / 3.0, 0.75, tileDescription);
+        drawTextR(WORLD_WIDTH - 0.25, 0.75, java.time.LocalDate.now().toString());
     }
 
     /**
@@ -380,7 +381,6 @@ public class Engine {
                 StdDraw.show();
             }
         }
-
     }
 
     /**
