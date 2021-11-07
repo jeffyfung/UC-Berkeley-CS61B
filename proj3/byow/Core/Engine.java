@@ -52,7 +52,7 @@ public class Engine {
     /** Renderer for tiles. */
     TERenderer ter = new TERenderer();
     /** Name of player. */
-    String playerName;
+    static public String playerName;
     /** Tracks the number of turn passed. Do not reset when loading a game. */
     int turnCount = 0;
     /** Tracks whether the game is finished. */
@@ -318,6 +318,9 @@ public class Engine {
                 tileDescription = Tileset.NOTHING.description();
             } else {
                 tileDescription = getTilePattern(cursorX, cursorY).description();
+                if (tileDescription.equals("player")) {
+                    tileDescription = playerName;
+                }
             }
             if (!tileDescription.equals(lastTileDescription)) {
                 lastTileDescription = tileDescription;
