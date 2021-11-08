@@ -56,7 +56,7 @@ public class Room {
             Room room = sampleRoomFromPartition(partition, false, 0
                     , engine.random);
             if (room != null) {
-                drawRoom(engine, room, patternWall, patternRoomFloor);
+                drawRoom(engine, room, patternWall, patternFloor);
                 rooms.add(room);
             }
         }
@@ -83,7 +83,7 @@ public class Room {
             Hallway h = g.connect(srcRoomIdx, tgtRoomIdx);
             if (h != null) {
                 roomsDS.connect(srcRoomIdx, tgtRoomIdx);
-                drawSequence(engine, h.getPath(), patternHallwayFloor);
+                drawSequence(engine, h.getPath(), patternFloor);
                 drawSequence(engine, h.getWalls(), patternWall);
                 srcRoomIdx = roomsDS.getLoneliestElement();
             } else {

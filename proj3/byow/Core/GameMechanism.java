@@ -27,6 +27,7 @@ public class GameMechanism {
     public static void initializeGameplay(Engine engine, ArrayList<Room> rooms) {
         ENGINE = engine;
         PLAYER = initializePlayer();
+        System.out.println("triggered");
         EXIT = initializeExit(rooms);
         ENGINE.changeTilePattern(PLAYER.pos, Engine.patternPlayerAvatar);
         ENGINE.changeTilePattern(EXIT, Engine.patternExit);
@@ -36,9 +37,10 @@ public class GameMechanism {
     private static Player initializePlayer() {
         int x = 0;
         int y = 0;
-        while (!ENGINE.getTilePattern(x, y).equals(Tileset.FLOOR)) {
+        while (!ENGINE.getTilePattern(x, y).isSameType(Engine.patternFloor)) {
             x = ENGINE.random.nextInt(Engine.WORLD_WIDTH);
             y = ENGINE.random.nextInt(Engine.WORLD_HEIGHT);
+            System.out.println("triggered");
         }
         Position pos = new Position(x,y);
         return new Player(pos, Tileset.AVATAR);

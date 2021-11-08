@@ -38,8 +38,8 @@ public class Engine {
     /** Coordinates of center, half-width and half-height of the 'Quit' option box on menu. */
     static final double[] optionQ = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 6, 8, 1.5};
     static final TETile patternWall = Tileset.WALL;
-    static final TETile patternRoomFloor = Tileset.FLOOR;
-    static final TETile patternHallwayFloor = Tileset.FLOOR;
+    static final TETile patternFloor = Tileset.GRASS;
+//    static final TETile patternHallwayFloor = Tileset.GRASS;
     static final TETile patternPlayerAvatar = Tileset.AVATAR;
     static final TETile patternExit = Tileset.LOCKED_DOOR;
     static final File CWD = new File(System.getProperty("user.dir"));
@@ -148,7 +148,7 @@ public class Engine {
         StdDraw.setPenColor(StdDraw.BOOK_RED);
         StdDraw.setFont(titleFont);
         StdDraw.clear(Color.BLACK);
-        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT - 5, "Simple Dungeon Game");
+        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT - 5, "Simple Maze Game");
 
         Font optionsFont = new Font("Serif", Font.BOLD, 25);
         StdDraw.setFont(optionsFont);
