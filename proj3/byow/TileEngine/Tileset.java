@@ -11,12 +11,16 @@ public class Tileset {
     public static final TETile NOTHING = new TETile(' ', Color.black, Color.black, "");
     public static final TETile AVATAR = new TETile('@', Color.white, Color.black,
             "Player", "./tileImage/avatar.png");
-    public static final TETile WALL = new TETile('#', new Color(216, 128, 128), Color.darkGray,
-            "Wall", "./tileImage/brownWall.png");
+    public static final TETile TREE = new TETile('♠', Color.green, Color.black,
+            "Tree", "./tileImage/tree.png");
     public static final TETile GRASS = new TETile('"', Color.green, Color.black,
             "Grass", "./tileImage/grass.png");
     public static final TETile LOCKED_DOOR = new TETile('█', Color.orange, Color.black,
-            "Exit", "./tileImage/door1a.png");
+            "Exit", "./tileImage/ice.png");
+    public static final TETile FIREBALL = new TETile('1', Color.red, Color.black,
+            "Fireball", "/tileImage/fireball.png");
+    public static final TETile SOIL = new TETile('▒', Color.yellow, Color.black,
+            "Soil", "./tileImage/soil.png");
 
     /* Unused tileset */
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
@@ -25,9 +29,9 @@ public class Tileset {
     public static final TETile FLOWER = new TETile('❀', Color.magenta, Color.pink, "Flower");
     public static final TETile UNLOCKED_DOOR = new TETile('▢', Color.orange, Color.black,
             "Unlocked Door");
-    public static final TETile SAND = new TETile('▒', Color.yellow, Color.black, "Sand");
     public static final TETile MOUNTAIN = new TETile('▲', Color.gray, Color.black, "Mountain");
-    public static final TETile TREE = new TETile('♠', Color.green, Color.black, "Tree");
+    public static final TETile WALL = new TETile('#', new Color(216, 128, 128), Color.darkGray,
+            "Wall", "./tileImage/brownWall.png");
 }
 
 

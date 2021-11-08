@@ -1,7 +1,5 @@
 package byow.Core;
 
-import byow.TileEngine.Tileset;
-
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -43,7 +41,7 @@ public class GameMechanism {
             System.out.println("triggered");
         }
         Position pos = new Position(x,y);
-        return new Player(pos, Tileset.AVATAR);
+        return new Player(pos, Engine.patternPlayerAvatar);
     }
 
     /**
@@ -58,7 +56,7 @@ public class GameMechanism {
         int dX;
         int dY;
         Position exitPos = new Position(x, y);
-        while (!ENGINE.getTilePattern(x, y).equals(Tileset.WALL)
+        while (!ENGINE.getTilePattern(x, y).equals(Engine.patternWall)
                 || Position.dist(exitPos, PLAYER.pos) < MIN_DIST_PLAYER_EXIT
                 || (x == randRoom.lowerLeft.getX() && y == randRoom.lowerLeft.getY())
                 || (x == randRoom.lowerLeft.getX() && y == randRoom.upperRight.getY())

@@ -37,9 +37,8 @@ public class Engine {
     static final double[] optionL = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 2, 8, 1.5};
     /** Coordinates of center, half-width and half-height of the 'Quit' option box on menu. */
     static final double[] optionQ = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 6, 8, 1.5};
-    static final TETile patternWall = Tileset.WALL;
-    static final TETile patternFloor = Tileset.GRASS;
-//    static final TETile patternHallwayFloor = Tileset.GRASS;
+    static final TETile patternWall = Tileset.TREE;
+    static final TETile patternFloor = Tileset.SOIL;
     static final TETile patternPlayerAvatar = Tileset.AVATAR;
     static final TETile patternExit = Tileset.LOCKED_DOOR;
     static final File CWD = new File(System.getProperty("user.dir"));
@@ -53,10 +52,10 @@ public class Engine {
     TERenderer ter = new TERenderer();
     /** Name of player. */
     static public String playerName;
-    /** Tracks the number of turn passed. Do not reset when loading a game. */
-    int turnCount = 0;
-    /** Tracks whether the game is finished. */
-    int gameOver = 0;
+    /** Tracks current game progress. Do not reset when loading a game. */
+    int level = 1;
+//    /** Tracks whether the game is finished. */
+//    int roundOver = 0;
     String lastTileDescription = "";
 
     /** Constructor for Engine objects. Initialize the game state with empty tiles. */
@@ -226,24 +225,23 @@ public class Engine {
      * player's health, number of turn passed, description of a tile and current date.
      * @param health health of the player
      * @param tileDescription description of a tile
-     * @param turn number of turn passed
      */
-    void drawHud(int health, String tileDescription, int turn) {
+    void drawHud(int health, String tileDescription, String level) {
         StdDraw.setPenColor(StdDraw.GRAY);
         StdDraw.filledRectangle(WORLD_WIDTH / 2.0, 0.75, WORLD_WIDTH / 2.0, 0.75);
         StdDraw.setPenColor(StdDraw.WHITE);
         drawTextL(0.5, 0.75, String.format("Health: %d", health));
-        drawText(WORLD_WIDTH / 3.0, 0.75, String.format("Turn: %d", turn));
-        drawText(WORLD_WIDTH * 2 / 3.0, 0.75, tileDescription);
+        drawText(WORLD_WIDTH * 1 / 3.0, 0.75, tileDescription);
+        drawText(WORLD_WIDTH * 2 / 3.0, 0.75, "Level: " + level);
         drawTextR(WORLD_WIDTH - 0.25, 0.75, java.time.LocalDate.now().toString());
     }
 
-    void drawGameOverDisplay() {
+    void drawRoundOverDisplay() {
         Font font = new Font("Serif", Font.BOLD, 40);
         StdDraw.setPenColor(StdDraw.BOOK_RED);
         StdDraw.setFont(font);
         clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 4.5 / 5.0,
-                "Congratulations! You have escaped the Dungeon!");
+                String.format("Game Over! You have survived %d round(s)!", level - 1));
 
         String leaderBoard = "leader board placeholder";
         drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 3.0 / 5.0, leaderBoard);
@@ -481,25 +479,22 @@ public class Engine {
                 , WORLD_XOFFSET, WORLD_YOFFSET);
         ter.renderFrame(tiles);
         String[] input = new String[] {"`", lastTileDescription};
+        int outcome = 0;
         while (true) {
-            drawHud(PLAYER.health, input[1], turnCount);
+            drawHud(PLAYER.health, input[1], Integer.toString(level));
             input = solicitCharInputAndCursorLocation();
             switch (input[0]) {
                 case "w" -> {
-                    gameOver = moveGameObject(PLAYER, 0, 1);
-                    turnCount += 1;
+                    outcome = moveGameObject(PLAYER, 0, 1);
                 }
                 case "s" -> {
-                    gameOver = moveGameObject(PLAYER, 0, -1);
-                    turnCount += 1;
+                    outcome = moveGameObject(PLAYER, 0, -1);
                 }
                 case "a" -> {
-                    gameOver = moveGameObject(PLAYER, -1, 0);
-                    turnCount += 1;
+                    outcome = moveGameObject(PLAYER, -1, 0);
                 }
                 case "d" -> {
-                    gameOver = moveGameObject(PLAYER, 1, 0);
-                    turnCount += 1;
+                    outcome = moveGameObject(PLAYER, 1, 0);
                 }
                 case ":" -> {
                     if (solicitCharInput() == 'q') {
@@ -507,12 +502,21 @@ public class Engine {
                         System.exit(0);
                     }
                 }
-                case " " -> turnCount += 1;
-                case "`" -> {}
+                case " " -> GameMechanism.PLAYER.changeHealth(-1);
+//                case "`" -> {}
             }
-            if (gameOver == 1) {
-                System.out.println("Congratulations! You have escaped the Dungeon!");
-                drawGameOverDisplay();
+            if (outcome == 1) {
+                level += 1;
+                // TODO : add to HUD
+                String advanceMsg = String.format("Advance Level -> Level %d !", level);
+                System.out.println(advanceMsg);
+                // reset state: tiles, PLAYER, EXIT
+                // alternatively start a new engine and run it w/ next rand seed
+                // need to rewrite GameMechanism class
+//                runInteractiveEngine(random.nextInt());
+            } else if (outcome == 3) {
+                System.out.println("Game Over!");
+                drawRoundOverDisplay();
                 char restart;
                 while (true) {
                     restart = solicitCharInput();
@@ -533,37 +537,39 @@ public class Engine {
      * @param inputSource parses input string from user
      * @return array representing game state
      */
+    // TODO: to match interactive gameplay
     TETile[][] runStaticGamePlay(InputSource inputSource) {
+        int outcome = 0;
         while (inputSource.possibleNextInput()) {
             char c = inputSource.getNextKey();
             switch (c) {
                 case 'w' -> {
-                    gameOver = moveGameObject(PLAYER, 0, 1);
-                    turnCount += 1;
+                    outcome = moveGameObject(PLAYER, 0, 1);
                 }
                 case 's' -> {
-                    gameOver = moveGameObject(PLAYER, 0, -1);
-                    turnCount += 1;
+                    outcome = moveGameObject(PLAYER, 0, -1);
                 }
                 case 'a' -> {
-                    gameOver = moveGameObject(PLAYER, -1, 0);
-                    turnCount += 1;
+                    outcome = moveGameObject(PLAYER, -1, 0);
                 }
                 case 'd' -> {
-                    gameOver = moveGameObject(PLAYER, 1, 0);
-                    turnCount += 1;
+                    outcome = moveGameObject(PLAYER, 1, 0);
                 }
                 case ':' -> {
-                    if (inputSource.getNextKey() == 'q') {
+                    if (solicitCharInput() == 'q') {
                         saveGame();
                         System.exit(0);
                     }
                 }
-                case ' ' -> turnCount += 1;
+                case ' ' -> GameMechanism.PLAYER.changeHealth(-1);
             }
-            if (gameOver == 1) {
-                System.out.println("Congratulations! You have escaped the Dungeon!");
-                System.exit(0);
+            if (outcome == 1) {
+                level += 1;
+                String advanceMsg = String.format("Advance Level -> Level %d !", level);
+                System.out.println(advanceMsg);
+                runStaticEngine(random.nextInt(), inputSource);
+            } else if (outcome == 3) {
+                System.out.println("Game Over!");
             }
         }
         return tiles;
@@ -623,8 +629,8 @@ public class Engine {
         HashMap<String, Serializable> engineState = new HashMap<>();
         engineState.put("random", random);
         engineState.put("tiles", tiles);
-        engineState.put("turnCount", turnCount);
         engineState.put("playerName", playerName);
+        engineState.put("level", level);
         writeObject(join(GAMESAVE, "engineState"), engineState);
     }
 
@@ -656,7 +662,7 @@ public class Engine {
         HashMap<String, Serializable> engineState = readObject(file, HashMap.class);
         random = (Random) engineState.get("random");
         tiles = (TETile[][]) engineState.get("tiles");
-        turnCount = (int) engineState.get("turnCount");
         playerName = (String) engineState.get("playerName");
+        level = (int) engineState.get("level");
     }
 }
