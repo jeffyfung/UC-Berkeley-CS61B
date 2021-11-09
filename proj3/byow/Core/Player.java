@@ -8,26 +8,31 @@ import byow.TileEngine.TETile;
 public class Player extends GameObject {
     /** Health of player. Game ends when health <= 0  */
     int health = 100;
+    /** Name of player */
+    String name;
 
     /**
      * Constructor for the class.
      * @param pos position of player
+     * @param name name of player
      * @param avatar tile pattern representing the player
      */
-    public Player(Position pos, TETile avatar) {
+    Player(Position pos, String name, TETile avatar) {
         super(pos, avatar);
+        this.name = name;
         this.lastTilePattern = Engine.patternFloor;
     }
 
     /**
      * Moves player.
+     * @param engine game engine
      * @param dX displacement along x-axis
      * @param dY displacement along y-axis
-     * @return outcome of movement: 0 - success; 1 - advance level; 2 - no change; 3 - game ends
-     * as player's health falls <= 0;
+     * @return outcome of movement: 0 - success; 1 - advance level; 2 - no movement; 3 - game ends
+     * as player's health falls to 0;
      */
-    public int move(int dX, int dY) {
-        int out = super.move(dX, dY);
+    int move(Engine engine, int dX, int dY) {
+        int out = super.move(engine, dX, dY);
         if (out == 0) {
             changeHealth(-1);
             if (health <= 0) {
@@ -41,7 +46,17 @@ public class Player extends GameObject {
      * Modify player's health.
      * @param change health change
      */
-    public void changeHealth(int change) {
+    void changeHealth(int change) {
         this.health += change;
+    }
+
+    /**
+     * Set name of player.
+     * @param name name of player
+     * @return name of player
+     */
+    String setName(String name) {
+        this.name = name;
+        return name;
     }
 }

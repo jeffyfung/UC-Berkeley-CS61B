@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
-import static byow.Core.GameMechanism.PLAYER;
-import static byow.Core.GameMechanism.moveGameObject;
 import static byow.Core.PersistenceUtils.*;
 
 /**
@@ -50,13 +48,12 @@ public class Engine {
     TETile[][] tiles;
     /** Renderer for tiles. */
     TERenderer ter = new TERenderer();
-    /** Name of player. */
-    static public String playerName;
-    /** Tracks current game progress. Do not reset when loading a game. */
+    /** Object that controls operations and interactions of game objects */
+    GameMechanics gameMech;
+    /** Tracks game progress. Do not reset when loading a game. */
     int level = 1;
-//    /** Tracks whether the game is finished. */
-//    int roundOver = 0;
-    String lastTileDescription = "";
+    /** Description of tile at cursor. */
+    String tileDescriptionAtCursor = "";
 
     /** Constructor for Engine objects. Initialize the game state with empty tiles. */
     public Engine() {
@@ -81,16 +78,14 @@ public class Engine {
             switch (inputChar) {
                 case 'n' -> {
                     int seed = solicitSeed();
-                    playerName = solicitPlayerName();
-                    runInteractiveEngine(seed);
-                    return;
+                    String playerName = solicitPlayerName();
+                    runInteractiveEngine(seed, playerName);
                 }
                 case 'l' -> {
                     boolean loadStatus = loadGame(true);
                     if (loadStatus) {
                         runInteractiveGameplay();
                     }
-                    return;
                 }
                 case 'q' -> System.exit(0);
             }
@@ -99,7 +94,8 @@ public class Engine {
 
     /**
      * Run the game engine. The engine should behave exactly as if the user typed these characters
-     * into the engine using interactWithKeyboard(), except the game will not ask for player name.
+     * into the engine using interactWithKeyboard(), except that the only thing the user is
+     * prompted to input, apart from the gameplay, is the seed for RNG.
      * If the first valid input character is "l", the last saved game state, if any, will be
      * loaded. For instance, the call interactWithInputString("n123sss:q") followed by the call
      * interactWithInputString("lww") should yield the exact same world state as
@@ -236,13 +232,18 @@ public class Engine {
         drawTextR(WORLD_WIDTH - 0.25, 0.75, java.time.LocalDate.now().toString());
     }
 
-    void drawRoundOverDisplay() {
+    /**
+     * Draws a player's score (i.e. number of rounds they survive) and a leaderboard. Also
+     * draws a question asking if they want to restart the game. The function is called at the end
+     * of a game.
+     */
+    void drawEndDisplay() {
         Font font = new Font("Serif", Font.BOLD, 40);
         StdDraw.setPenColor(StdDraw.BOOK_RED);
         StdDraw.setFont(font);
         clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 4.5 / 5.0,
-                String.format("Game Over! You have survived %d round(s)!", level - 1));
-
+                String.format("Game Over! You have survived %d round(s)!", Math.max(0, level - 1)));
+        // TODO: update leaderboard
         String leaderBoard = "leader board placeholder";
         drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 3.0 / 5.0, leaderBoard);
 
@@ -270,14 +271,19 @@ public class Engine {
      * @return user input
      */
     private char solicitCharOrMouseInputForMenu() {
+        // TODO: mouse press bug
         while (true) {
+            System.out.println("triggered");
             if (StdDraw.hasNextKeyTyped()) {
                 char input = Character.toLowerCase(StdDraw.nextKeyTyped());
                 System.out.println(input);
                 return input;
             }
             if (StdDraw.isMousePressed()) {
-                return solicitInputFromMouseForMenu();
+                System.out.println("mouse pressed");
+                char x = solicitInputFromMouseForMenu();
+                System.out.println(x);
+                return x;
             }
         }
     }
@@ -321,7 +327,7 @@ public class Engine {
             if (StdDraw.hasNextKeyTyped()) {
                 char input = Character.toLowerCase(StdDraw.nextKeyTyped());
                 System.out.println(input);
-                return new String[]{Character.toString(input), lastTileDescription};
+                return new String[]{Character.toString(input), tileDescriptionAtCursor};
             }
             int cursorX = (int) StdDraw.mouseX() - WORLD_XOFFSET;
             int cursorY = (int) StdDraw.mouseY() - WORLD_YOFFSET;
@@ -331,13 +337,12 @@ public class Engine {
             } else {
                 tileDescription = getTilePattern(cursorX, cursorY).description();
                 if (tileDescription.equals("Player")) {
-                    tileDescription = playerName;
+                    tileDescription = gameMech.player.name;
                 }
             }
-            if (!tileDescription.equals(lastTileDescription)) {
-                lastTileDescription = tileDescription;
-
-                return new String[]{"`", tileDescription};
+            if (!tileDescription.equals(tileDescriptionAtCursor)) {
+                tileDescriptionAtCursor = tileDescription;
+                return new String[]{"`", tileDescriptionAtCursor};
             }
         }
     }
@@ -438,9 +443,10 @@ public class Engine {
      * Initializes engine and gameplay setting. Then run interactive gameplay. Called when user
      * calls interactWithKeyboard().
      * @param seed seed for RNG
+     * @param playerName name of player
      */
-    void runInteractiveEngine(int seed) {
-        runEngine(seed);
+    void runInteractiveEngine(int seed, String playerName) {
+        runEngine(seed, playerName);
         runInteractiveGameplay();
     }
 
@@ -458,15 +464,26 @@ public class Engine {
     }
 
     /**
-     * Pseudo-randomly generates rooms and hallways. Then generates gameplay features e.g. player
-     * and exit.
+     * Pseudo-randomly generates rooms and hallways and initialize game objects.
+     * @param seed seed for RNG
+     * @param playerName name of player
+     */
+    void runEngine(int seed, String playerName) {
+        this.random = new Random(seed);
+        ArrayList<Room> rooms = Room.buildRooms(this);
+        Room.connectRooms(this, rooms);
+        gameMech = new GameMechanics(this, rooms, playerName);
+    }
+
+    /**
+     * Pseudo-randomly generates rooms and hallways and initialize game objects.
      * @param seed seed for RNG
      */
     void runEngine(int seed) {
         this.random = new Random(seed);
         ArrayList<Room> rooms = Room.buildRooms(this);
         Room.connectRooms(this, rooms);
-        GameMechanism.initializeGameplay(this, rooms);
+        gameMech = new GameMechanics(this, rooms, "placeholder");
     }
 
     /**
@@ -477,58 +494,61 @@ public class Engine {
     void runInteractiveGameplay() {
         ter.initialize(WORLD_WIDTH + WORLD_XOFFSET, WORLD_HEIGHT + WORLD_YOFFSET
                 , WORLD_XOFFSET, WORLD_YOFFSET);
-        ter.renderFrame(tiles);
-        String[] input = new String[] {"`", lastTileDescription};
+        String[] input = new String[] {"`", tileDescriptionAtCursor};
         int outcome = 0;
         while (true) {
-            drawHud(PLAYER.health, input[1], Integer.toString(level));
+            ter.renderFrame(tiles);
+            drawHud(gameMech.player.health, input[1], Integer.toString(level));
             input = solicitCharInputAndCursorLocation();
             switch (input[0]) {
-                case "w" -> {
-                    outcome = moveGameObject(PLAYER, 0, 1);
-                }
-                case "s" -> {
-                    outcome = moveGameObject(PLAYER, 0, -1);
-                }
-                case "a" -> {
-                    outcome = moveGameObject(PLAYER, -1, 0);
-                }
-                case "d" -> {
-                    outcome = moveGameObject(PLAYER, 1, 0);
-                }
+                case "w" -> outcome = gameMech.moveGameObject(gameMech.player, 0, 1);
+                case "s" -> outcome = gameMech.moveGameObject(gameMech.player, 0, -1);
+                case "a" -> outcome = gameMech.moveGameObject(gameMech.player, -1, 0);
+                case "d" -> outcome = gameMech.moveGameObject(gameMech.player, 1, 0);
+                case " " -> outcome = gameMech.moveGameObject(gameMech.player, 0, 0);
                 case ":" -> {
                     if (solicitCharInput() == 'q') {
                         saveGame();
                         System.exit(0);
                     }
                 }
-                case " " -> GameMechanism.PLAYER.changeHealth(-1);
-//                case "`" -> {}
             }
-            if (outcome == 1) {
-                level += 1;
-                // TODO : add to HUD
-                String advanceMsg = String.format("Advance Level -> Level %d !", level);
-                System.out.println(advanceMsg);
-                // reset state: tiles, PLAYER, EXIT
-                // alternatively start a new engine and run it w/ next rand seed
-                // need to rewrite GameMechanism class
+            switch (outcome) {
+                case 1 -> {
+                    level += 1;
+                    // TODO : add to HUD
+                    String advanceMsg = String.format("Advance Level -> Level %d !", level);
+                    System.out.println(advanceMsg);
+                    // reset state: tiles, PLAYER, EXIT
+                    // alternatively start a new engine and run it w/ next rand seed
+                    // need to rewrite GameMechanism class
 //                runInteractiveEngine(random.nextInt());
-            } else if (outcome == 3) {
-                System.out.println("Game Over!");
-                drawRoundOverDisplay();
-                char restart;
-                while (true) {
-                    restart = solicitCharInput();
-                    if (restart == 'y') {
-                        Main.main(new String[]{});
-                        return;
-                    } else if (restart == 'n') {
-                        System.exit(0);
-                    }
+                }
+                case 3 -> {
+                    System.out.println("Game Over!");
+                    drawEndDisplay();
+                    restartGame();
                 }
             }
-            ter.renderFrame(tiles);
+        }
+    }
+
+    /**
+     * Ask whether user would like to restart the game. If 'y' (case-insensitive) is received,
+     * user will be prompted to the game menu for a fresh new game. If 'n' (case-insensitive) is
+     * received, display window will close and the program halts.
+     */
+    void restartGame() {
+        char restart;
+        while (true) {
+            restart = solicitCharInput();
+            if (restart == 'y') {
+                Main.main(new String[]{});
+//                return;
+                System.exit(0);
+            } else if (restart == 'n') {
+                System.exit(0);
+            }
         }
     }
 
@@ -543,25 +563,17 @@ public class Engine {
         while (inputSource.possibleNextInput()) {
             char c = inputSource.getNextKey();
             switch (c) {
-                case 'w' -> {
-                    outcome = moveGameObject(PLAYER, 0, 1);
-                }
-                case 's' -> {
-                    outcome = moveGameObject(PLAYER, 0, -1);
-                }
-                case 'a' -> {
-                    outcome = moveGameObject(PLAYER, -1, 0);
-                }
-                case 'd' -> {
-                    outcome = moveGameObject(PLAYER, 1, 0);
-                }
+                case 'w' -> outcome = gameMech.moveGameObject(gameMech.player, 0, 1);
+                case 's' -> outcome = gameMech.moveGameObject(gameMech.player, 0, -1);
+                case 'a' -> outcome = gameMech.moveGameObject(gameMech.player, -1, 0);
+                case 'd' -> outcome = gameMech.moveGameObject(gameMech.player, 1, 0);
+                case ' ' -> outcome = gameMech.moveGameObject(gameMech.player, 0, 0);
                 case ':' -> {
                     if (solicitCharInput() == 'q') {
                         saveGame();
                         System.exit(0);
                     }
                 }
-                case ' ' -> GameMechanism.PLAYER.changeHealth(-1);
             }
             if (outcome == 1) {
                 level += 1;
@@ -608,35 +620,25 @@ public class Engine {
     }
 
     /**
-     * Create a directory, if not already exists, to store engine state and states of game
-     * objects for saving and loading games.
+     * Create a directory, if not already exists, to store state of game for saving and loading
+     * games.
      */
     static void setUpPersistence() {
         GAMESAVE.mkdir();
     }
 
-    /** Saves engine state and states of game objects to .gamesave directory. */
+    /** Saves state of game to .gamesave directory. */
     void saveGame() {
-        saveEngineState();
-        GameMechanism.saveGameObjects();
+        HashMap<String, Serializable> gameState = new HashMap<>();
+        gameState.put("random", random);
+        gameState.put("tiles", tiles);
+        gameState.put("level", level);
+        gameState.put("gameMech", gameMech);
+        writeObject(join(GAMESAVE, "gameState"), gameState);
     }
 
     /**
-     * Serializes and saves Random object, game state array and turn count to a
-     * .gamesave/engineState file.
-     * */
-    void saveEngineState() {
-        HashMap<String, Serializable> engineState = new HashMap<>();
-        engineState.put("random", random);
-        engineState.put("tiles", tiles);
-        engineState.put("playerName", playerName);
-        engineState.put("level", level);
-        writeObject(join(GAMESAVE, "engineState"), engineState);
-    }
-
-    /**
-     * Load previously saved engine state and game objects from .gamesave directory. Check if a
-     * previous save exists.
+     * Load state of game from .gamesave directory. Check if a previous save exists.
      * @param drawMsg draw message if there is no previous gamesave
      * @return whether a save is successfully loaded
      */
@@ -649,20 +651,15 @@ public class Engine {
             }
             return false;
         }
-        loadEngineState(join(GAMESAVE, "engineState"));
-        GameMechanism.loadGameObjects(join(GAMESAVE, "gameObjects"), this);
-        return true;
-    }
 
-    /**
-     * Load engine state from file.
-     * @param file file to load from
-     */
-    void loadEngineState(File file) {
-        HashMap<String, Serializable> engineState = readObject(file, HashMap.class);
-        random = (Random) engineState.get("random");
-        tiles = (TETile[][]) engineState.get("tiles");
-        playerName = (String) engineState.get("playerName");
-        level = (int) engineState.get("level");
+        File f = join(GAMESAVE, "gameState");
+        HashMap<String, Serializable> gameState = readObject(f, HashMap.class);
+        random = (Random) gameState.get("random");
+        tiles = (TETile[][]) gameState.get("tiles");
+        level = (int) gameState.get("level");
+        gameMech = (GameMechanics) gameState.get("gameMech");
+        gameMech.engine = this;
+
+        return true;
     }
 }
