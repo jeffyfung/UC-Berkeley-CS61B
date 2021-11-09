@@ -58,11 +58,20 @@ public class Engine {
     /** Constructor for Engine objects. Initialize the game state with empty tiles. */
     public Engine() {
         this.tiles = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
+        setTilesToBackground();
+    }
+
+    /**
+     * Set all tiles to empty.
+     * @return array of empty tiles
+     */
+    private TETile[][] setTilesToBackground() {
         for (int x = 0; x < WORLD_WIDTH; x += 1) {
             for (int y = 0; y < WORLD_HEIGHT; y += 1) {
                 tiles[x][y] = Tileset.NOTHING;
             }
         }
+        return tiles;
     }
 
     /**
@@ -280,10 +289,11 @@ public class Engine {
                 return input;
             }
             if (StdDraw.isMousePressed()) {
+                System.out.println(StdDraw.isMousePressed());
+                System.out.println(StdDraw.isMousePressed());
+                System.out.println(StdDraw.isMousePressed());
                 System.out.println("mouse pressed");
-                char x = solicitInputFromMouseForMenu();
-                System.out.println(x);
-                return x;
+                return solicitInputFromMouseForMenu();
             }
         }
     }
@@ -470,6 +480,7 @@ public class Engine {
      */
     void runEngine(int seed, String playerName) {
         this.random = new Random(seed);
+        setTilesToBackground();
         ArrayList<Room> rooms = Room.buildRooms(this);
         Room.connectRooms(this, rooms);
         gameMech = new GameMechanics(this, rooms, playerName);
@@ -516,13 +527,10 @@ public class Engine {
             switch (outcome) {
                 case 1 -> {
                     level += 1;
-                    // TODO : add to HUD
+                    // TODO : keep health from last level; indicate new level in HUD
                     String advanceMsg = String.format("Advance Level -> Level %d !", level);
                     System.out.println(advanceMsg);
-                    // reset state: tiles, PLAYER, EXIT
-                    // alternatively start a new engine and run it w/ next rand seed
-                    // need to rewrite GameMechanism class
-//                runInteractiveEngine(random.nextInt());
+                    runInteractiveEngine(random.nextInt(), gameMech.player.name);
                 }
                 case 3 -> {
                     System.out.println("Game Over!");
@@ -544,7 +552,6 @@ public class Engine {
             restart = solicitCharInput();
             if (restart == 'y') {
                 Main.main(new String[]{});
-//                return;
                 System.exit(0);
             } else if (restart == 'n') {
                 System.exit(0);
