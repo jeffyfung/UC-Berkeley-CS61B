@@ -42,6 +42,8 @@ public class Engine {
     static final File CWD = new File(System.getProperty("user.dir"));
     /** Directory for saving and loading game. */
     static final File GAMESAVE = join(CWD, ".gamesave");
+    /** Initial health of player. Game ends when health drops to 0 */
+    static final int INIT_PLAYER_HEALTH = 500;
     /** RNG */
     Random random;
     /** 2D array of tiles representing game state. */
@@ -51,12 +53,13 @@ public class Engine {
     /** Object that controls operations and interactions of game objects */
     GameMechanics gameMech;
     /** Tracks game progress. Do not reset when loading a game. */
-    int level = 1;
+    int level;
     /** Description of tile at cursor. */
     String tileDescriptionAtCursor = "";
 
     /** Constructor for Engine objects. Initialize the game state with empty tiles. */
     public Engine() {
+        this.level = 1;
         this.tiles = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
         setTilesToBackground();
     }
@@ -88,7 +91,7 @@ public class Engine {
                 case 'n' -> {
                     int seed = solicitSeed();
                     String playerName = solicitPlayerName();
-                    runInteractiveEngine(seed, playerName);
+                    runInteractiveEngine(seed, playerName, INIT_PLAYER_HEALTH);
                 }
                 case 'l' -> {
                     boolean loadStatus = loadGame(true);
@@ -118,7 +121,7 @@ public class Engine {
         switch (collectMenuOption(inputSource)) {
             case 'n' -> {
                 int seed = collectSeedFromInputString(inputSource);
-                return runStaticEngine(seed, inputSource);
+                return runStaticEngine(seed, inputSource, INIT_PLAYER_HEALTH);
             }
             case 'l' -> {
                 boolean loadStatus = loadGame(false);
@@ -235,8 +238,9 @@ public class Engine {
         StdDraw.setPenColor(StdDraw.GRAY);
         StdDraw.filledRectangle(WORLD_WIDTH / 2.0, 0.75, WORLD_WIDTH / 2.0, 0.75);
         StdDraw.setPenColor(StdDraw.WHITE);
+        String td = tileDescription.length() == 0? "" : "Tile: " + tileDescription;
         drawTextL(0.5, 0.75, String.format("Health: %d", health));
-        drawText(WORLD_WIDTH * 1 / 3.0, 0.75, tileDescription);
+        drawText(WORLD_WIDTH * 1 / 3.0, 0.75, td);
         drawText(WORLD_WIDTH * 2 / 3.0, 0.75, "Level: " + level);
         drawTextR(WORLD_WIDTH - 0.25, 0.75, java.time.LocalDate.now().toString());
     }
@@ -454,22 +458,24 @@ public class Engine {
      * calls interactWithKeyboard().
      * @param seed seed for RNG
      * @param playerName name of player
+     * @param playerHealth health of player
      */
-    void runInteractiveEngine(int seed, String playerName) {
-        runEngine(seed, playerName);
+    void runInteractiveEngine(int seed, String playerName, int playerHealth) {
+        runEngine(seed, playerName, playerHealth);
         runInteractiveGameplay();
     }
 
     /**
      * Initializes engine and gameplay setting. Then change game state according to input string
      * sequence from user. Return the final game state. Called when user calls
-     * interactWithKeyboard().
+     * interactWithString().
      * @param seed seed for RNG
      * @param inputSource parses input string from user
+     * @param playerHealth health of player
      * @return array representing tiles in current game state
      */
-    TETile[][] runStaticEngine(int seed, InputSource inputSource) {
-        runEngine(seed);
+    TETile[][] runStaticEngine(int seed, InputSource inputSource, int playerHealth) {
+        runEngine(seed, playerHealth);
         return runStaticGamePlay(inputSource);
     }
 
@@ -477,24 +483,26 @@ public class Engine {
      * Pseudo-randomly generates rooms and hallways and initialize game objects.
      * @param seed seed for RNG
      * @param playerName name of player
+     * @param playerHealth health of player
      */
-    void runEngine(int seed, String playerName) {
+    void runEngine(int seed, String playerName, int playerHealth) {
         this.random = new Random(seed);
         setTilesToBackground();
         ArrayList<Room> rooms = Room.buildRooms(this);
         Room.connectRooms(this, rooms);
-        gameMech = new GameMechanics(this, rooms, playerName);
+        gameMech = new GameMechanics(this, rooms, playerName, playerHealth);
     }
 
     /**
      * Pseudo-randomly generates rooms and hallways and initialize game objects.
      * @param seed seed for RNG
+     * @param playerHealth health of player
      */
-    void runEngine(int seed) {
+    void runEngine(int seed, int playerHealth) {
         this.random = new Random(seed);
         ArrayList<Room> rooms = Room.buildRooms(this);
         Room.connectRooms(this, rooms);
-        gameMech = new GameMechanics(this, rooms, "placeholder");
+        gameMech = new GameMechanics(this, rooms, "placeholder", playerHealth);
     }
 
     /**
@@ -530,7 +538,7 @@ public class Engine {
                     // TODO : keep health from last level; indicate new level in HUD
                     String advanceMsg = String.format("Advance Level -> Level %d !", level);
                     System.out.println(advanceMsg);
-                    runInteractiveEngine(random.nextInt(), gameMech.player.name);
+                    runInteractiveEngine(random.nextInt(), gameMech.player.name, gameMech.player.health);
                 }
                 case 3 -> {
                     System.out.println("Game Over!");
@@ -586,7 +594,7 @@ public class Engine {
                 level += 1;
                 String advanceMsg = String.format("Advance Level -> Level %d !", level);
                 System.out.println(advanceMsg);
-                runStaticEngine(random.nextInt(), inputSource);
+                runStaticEngine(random.nextInt(), inputSource, gameMech.player.health);
             } else if (outcome == 3) {
                 System.out.println("Game Over!");
             }

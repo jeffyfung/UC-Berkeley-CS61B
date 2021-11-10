@@ -20,20 +20,21 @@ public class GameMechanics implements Serializable {
     /**
      * Constructor of the class. Set player and exit at random locations of the world.
      */
-    GameMechanics(Engine engine, ArrayList<Room> rooms, String playerName) {
+    GameMechanics(Engine engine, ArrayList<Room> rooms, String playerName, int playerHealth) {
         this.engine = engine;
-        this.player = initializePlayer(playerName);
+        this.player = initializePlayer(playerName, playerHealth);
         this.exit = initializeExit(rooms);
         engine.changeTilePattern(player.pos, Engine.patternPlayerAvatar);
         engine.changeTilePattern(exit, Engine.patternExit);
     }
 
     /**
-     * Randomly initializes player object. Player must be placed within the walls.
+     * Randomly initializes player. Player must be placed within the confines of walls.
      * @param playerName name of player
+     * @param playerHealth health of player
      * @return player set at a random location
      */
-    private Player initializePlayer(String playerName) {
+    private Player initializePlayer(String playerName, int playerHealth) {
         int x = 0;
         int y = 0;
         while (!engine.getTilePattern(x, y).isSameType(Engine.patternFloor)) {
@@ -41,7 +42,7 @@ public class GameMechanics implements Serializable {
             y = engine.random.nextInt(Engine.WORLD_HEIGHT);
         }
         Position pos = new Position(x,y);
-        return new Player(pos, playerName, Engine.patternPlayerAvatar);
+        return new Player(pos, Engine.patternPlayerAvatar, playerName, playerHealth);
     }
 
     /**

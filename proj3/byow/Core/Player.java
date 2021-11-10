@@ -7,19 +7,15 @@ import byow.TileEngine.TETile;
  */
 public class Player extends GameObject {
     /** Health of player. Game ends when health <= 0  */
-    int health = 100;
+    int health;
     /** Name of player */
     String name;
 
-    /**
-     * Constructor for the class.
-     * @param pos position of player
-     * @param name name of player
-     * @param avatar tile pattern representing the player
-     */
-    Player(Position pos, String name, TETile avatar) {
+    /** Constructor of the class. */
+    Player(Position pos, TETile avatar, String name, int health) {
         super(pos, avatar);
         this.name = name;
+        this.health = health;
         this.lastTilePattern = Engine.patternFloor;
     }
 
