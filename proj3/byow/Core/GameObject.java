@@ -49,4 +49,12 @@ public class GameObject implements Serializable {
         return 0;
     }
 
+    /**
+     * Changes avatar of game object.
+     * @param t tile of the new avatar
+     */
+    void changeAvatar(TETile t) {
+        avatar = t;
+    }
+
 }

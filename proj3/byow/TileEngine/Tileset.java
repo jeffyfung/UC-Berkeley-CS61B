@@ -6,11 +6,12 @@ import java.awt.Color;
  * Contains constant tile objects, to avoid having to remake the same tiles in different parts of
  * the code.
  */
-
 public class Tileset {
     public static final TETile NOTHING = new TETile(' ', Color.black, Color.black, "");
-    public static final TETile AVATAR = new TETile('@', Color.white, Color.black,
-            "Player", "./tileImage/avatar.png");
+    public static final TETile AVATAR_LEFT = new TETile('@', Color.white, Color.black,
+            "Player", "./tileImage/avatarLeft.png");
+    public static final TETile AVATAR_RIGHT = new TETile('-', Color.white, Color.black,
+            "Player", "./tileImage/avatarRight.png");
     public static final TETile TREE = new TETile('♠', Color.green, Color.black,
             "Tree", "./tileImage/tree.png");
     public static final TETile GRASS = new TETile('"', Color.green, Color.black,
