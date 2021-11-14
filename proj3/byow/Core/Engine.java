@@ -7,7 +7,6 @@ import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 import edu.princeton.cs.introcs.StdDraw;
 
-import java.awt.*;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,12 +28,6 @@ public class Engine {
     static final int WORLD_XOFFSET = 0;
     /** Y-axis distance between bottom of display window and bottom of frame to draw tiles. */
     static final int WORLD_YOFFSET = 2;
-    /** Coordinates of center, half-width and half-height of the 'New Game' option box on menu. */
-    static final double[] optionN = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 + 2, 8, 1.5};
-    /** Coordinates of center, half-width and half-height of the 'Load Game' option box on menu. */
-    static final double[] optionL = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 2, 8, 1.5};
-    /** Coordinates of center, half-width and half-height of the 'Quit' option box on menu. */
-    static final double[] optionQ = new double[]{WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 6, 8, 1.5};
     static final TETile patternWall = Tileset.TREE;
     static final TETile patternFloor = Tileset.SOIL;
     static final TETile patternPlayerAvatar = Tileset.AVATAR;
@@ -83,8 +76,8 @@ public class Engine {
      */
     public void interactWithKeyboard() {
         setUpPersistence();
-        drawSetting();
-        drawMenu();
+        DrawingUtils.drawSetting();
+        DrawingUtils.drawMenu();
         while (true) {
             char inputChar = solicitCharOrMouseInputForMenu();
             switch (inputChar) {
@@ -138,133 +131,6 @@ public class Engine {
     }
 
     /**
-     * Initialize setting for drawing the menu and gameplay. Used when users enter the game by
-     * calling interactWithKeyboard().
-     */
-    private void drawSetting() {
-        StdDraw.setCanvasSize(WORLD_WIDTH * 16, (WORLD_HEIGHT + 3) * 16);
-        StdDraw.setXscale(0, WORLD_WIDTH);
-        StdDraw.setYscale(0, WORLD_HEIGHT);
-        StdDraw.setPenColor(StdDraw.WHITE);
-        StdDraw.enableDoubleBuffering();
-    }
-
-    /** Draw game menu. */
-    void drawMenu() {
-        Font titleFont = new Font("Serif", Font.BOLD, 60);
-        StdDraw.setPenColor(StdDraw.BOOK_RED);
-        StdDraw.setFont(titleFont);
-        StdDraw.clear(Color.BLACK);
-        StdDraw.text(WORLD_WIDTH / 2.0, WORLD_HEIGHT - 5, "Simple Maze Game");
-
-        Font optionsFont = new Font("Serif", Font.BOLD, 25);
-        StdDraw.setFont(optionsFont);
-        StdDraw.setPenRadius(0.01);
-
-        StdDraw.rectangle(optionN[0], optionN[1], optionN[2], optionN[3]);
-        StdDraw.text(optionN[0], optionN[1], "New Game (N)");
-        StdDraw.rectangle(optionL[0], optionL[1], optionL[2], optionL[3]);
-        StdDraw.text(optionL[0], optionL[1], "Load Game (L)");
-        StdDraw.rectangle(optionQ[0], optionQ[1], optionQ[2], optionQ[3]);
-        StdDraw.text(optionQ[0], optionQ[1], "Quit (Q)");
-
-        StdDraw.show();
-    }
-
-    /**
-     * Helper function for drawing centered text.
-     * @param x x coordinate of center of the string to be drawn.
-     * @param y y coordinate of center of the string to be drawn.
-     * @param str string to be drawn
-     * */
-    void drawText(double x, double y, String str) {
-        StdDraw.text(x, y, str);
-        StdDraw.show();
-    }
-
-    /**
-     * Helper function for drawing left aligned text.
-     * @param x x coordinate of left boundary of the string to be drawn.
-     * @param y y coordinate of left boundary of the string to be drawn.
-     * @param str string to be drawn
-     */
-    void drawTextL(double x, double y, String str) {
-        StdDraw.textLeft(x, y, str);
-        StdDraw.show();
-    }
-
-    /**
-     * Helper function for drawing right aligned text.
-     * @param x x coordinate of right boundary of the string to be drawn.
-     * @param y y coordinate of right boundary of the string to be drawn.
-     * @param str string to be drawn
-     */
-    void drawTextR(double x, double y, String str) {
-        StdDraw.textRight(x, y, str);
-        StdDraw.show();
-    }
-
-    /**
-     * Helper function for drawing centered text with new font.
-     * @param x x coordinate of right boundary of the string to be drawn.
-     * @param y y coordinate of right boundary of the string to be drawn.
-     * @param str string to be drawn
-     * @param font font to be used
-     */
-    void drawTextWithFont(double x, double y, String str, Font font) {
-        StdDraw.setFont(font);
-        StdDraw.text(x, y, str);
-        StdDraw.show();
-    }
-
-    /**
-     * Erase all drawings on the canvas and draw centered text.
-     * @param x x coordinate of right boundary of the string to be drawn.
-     * @param y y coordinate of right boundary of the string to be drawn.
-     * @param str string to be drawn
-     */
-    void clearCanvasAndDrawText(double x, double y, String str) {
-        StdDraw.clear(StdDraw.BLACK);
-        drawText(x, y, str);
-    }
-
-    /**
-     * Draw HUD at the bottom of the window during gameplay. The HUD displays information about
-     * player's health, number of turn passed, description of a tile and current date.
-     * @param health health of the player
-     * @param tileDescription description of a tile
-     */
-    void drawHud(int health, String tileDescription, String level) {
-        StdDraw.setPenColor(StdDraw.GRAY);
-        StdDraw.filledRectangle(WORLD_WIDTH / 2.0, 0.75, WORLD_WIDTH / 2.0, 0.75);
-        StdDraw.setPenColor(StdDraw.WHITE);
-        String td = tileDescription.length() == 0? "" : "Tile: " + tileDescription;
-        drawTextL(0.5, 0.75, String.format("Health: %d", health));
-        drawText(WORLD_WIDTH * 1 / 3.0, 0.75, td);
-        drawText(WORLD_WIDTH * 2 / 3.0, 0.75, "Level: " + level);
-        drawTextR(WORLD_WIDTH - 0.25, 0.75, java.time.LocalDate.now().toString());
-    }
-
-    /**
-     * Draws a player's score (i.e. number of rounds they survive) and a leaderboard. Also
-     * draws a question asking if they want to restart the game. The function is called at the end
-     * of a game.
-     */
-    void drawEndDisplay() {
-        Font font = new Font("Serif", Font.BOLD, 40);
-        StdDraw.setPenColor(StdDraw.BOOK_RED);
-        StdDraw.setFont(font);
-        clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 4.5 / 5.0,
-                String.format("Game Over! You have survived %d round(s)!", Math.max(0, level - 1)));
-        // TODO: update leaderboard
-        String leaderBoard = "leader board placeholder";
-        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 3.0 / 5.0, leaderBoard);
-
-        String tryAgain = "Would You Like To Try Again? Y/N";
-        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT * 1.0 / 5.0, tryAgain);
-    }
-
-    /**
      * Gets each keyboard input as character. Converts to lower case alphabets if applicable.
      * @return keyboard input
      */
@@ -286,7 +152,6 @@ public class Engine {
     private char solicitCharOrMouseInputForMenu() {
         // TODO: mouse press bug
         while (true) {
-            System.out.println("triggered");
             if (StdDraw.hasNextKeyTyped()) {
                 char input = Character.toLowerCase(StdDraw.nextKeyTyped());
                 System.out.println(input);
@@ -310,20 +175,20 @@ public class Engine {
     private char solicitInputFromMouseForMenu() {
         double x = StdDraw.mouseX();
         double y = StdDraw.mouseY();
-        if (Double.compare(optionN[0] - optionN[2], x) <= 0
-                && Double.compare(x, optionN[0] + optionN[2]) <= 0
-                && Double.compare(optionN[1] - optionN[3], y) <= 0
-                && Double.compare(y, optionN[1] + optionN[3]) <= 0) {
+        if (Double.compare(DrawingUtils.optionNMinX, x) <= 0
+                && Double.compare(x, DrawingUtils.optionNMaxX) <= 0
+                && Double.compare(DrawingUtils.optionNMinY, y) <= 0
+                && Double.compare(y, DrawingUtils.optionNMaxY) <= 0) {
             return 'n';
-        } else if (Double.compare(optionL[0] - optionL[2], x) <= 0
-                && Double.compare(x, optionL[0] + optionL[2]) <= 0
-                && Double.compare(optionL[1] - optionL[3], y) <= 0
-                && Double.compare(y, optionL[1] + optionL[3]) <= 0) {
+        } else if (Double.compare(DrawingUtils.optionLMinX, x) <= 0
+                && Double.compare(x, DrawingUtils.optionLMaxX) <= 0
+                && Double.compare(DrawingUtils.optionLMinY, y) <= 0
+                && Double.compare(y, DrawingUtils.optionLMaxY) <= 0) {
             return 'l';
-        } else if (Double.compare(optionQ[0] - optionQ[2], x) <= 0
-                && Double.compare(x, optionQ[0] + optionQ[2]) <= 0
-                && Double.compare(optionQ[1] - optionQ[3], y) <= 0
-                && Double.compare(y, optionQ[1] + optionQ[3]) <= 0) {
+        } else if (Double.compare(DrawingUtils.optionQMinX, x) <= 0
+                && Double.compare(x, DrawingUtils.optionQMaxX) <= 0
+                && Double.compare(DrawingUtils.optionQMinY, y) <= 0
+                && Double.compare(y, DrawingUtils.optionQMaxY) <= 0) {
             return 'q';
         } else {
             return ' ';
@@ -370,7 +235,7 @@ public class Engine {
     private int solicitSeed() {
         StringBuilder sb = new StringBuilder();
         char input;
-        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+        DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
                 , "Enter Seed Then Press s");
         while (true) {
             input = solicitCharInput();
@@ -378,16 +243,17 @@ public class Engine {
                 try {
                     return Integer.parseUnsignedInt(sb.toString());
                 } catch (NumberFormatException e) {
-                    drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 13
+                    DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 13
                             , "Accept Positive Integer Only! Try Again!");
                     StdDraw.show();
                     sb = new StringBuilder();
                 }
             } else {
                 sb.append(input);
-                drawMenu();
-                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5, sb.toString());
-                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                DrawingUtils.drawMenu();
+                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5
+                        , sb.toString());
+                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
                         , "Enter Seed Then Press s");
                 StdDraw.show();
             }
@@ -401,17 +267,19 @@ public class Engine {
     private String solicitPlayerName() {
         StringBuilder sb = new StringBuilder();
         char input;
-        drawMenu();
-        drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10, "Enter Your Name Then Press /:");
+        DrawingUtils.drawMenu();
+        DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                , "Enter Your Name Then Press /:");
         while (true) {
             input = solicitCharInput();
             if (input == '/') {
                 return sb.toString();
             } else {
                 sb.append(input);
-                drawMenu();
-                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5, sb.toString());
-                drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                DrawingUtils.drawMenu();
+                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5
+                        , sb.toString());
+                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
                         , "Enter Your Name Then Press /:");
                 StdDraw.show();
             }
@@ -508,7 +376,7 @@ public class Engine {
     /**
      * Change the game state according to keyboard input from user in a turn-based way, and
      * draw the game state and HUD accordingly. "wasd" moves player, ":q" saves game and quit.
-     * Draw a message if the player successfully finishes the game.
+     * Display score and leaderboard, and prompt for user input if game over.
      */
     void runInteractiveGameplay() {
         ter.initialize(WORLD_WIDTH + WORLD_XOFFSET, WORLD_HEIGHT + WORLD_YOFFSET
@@ -517,14 +385,17 @@ public class Engine {
         int outcome = 0;
         while (true) {
             ter.renderFrame(tiles);
-            drawHud(gameMech.player.health, input[1], Integer.toString(level));
+            DrawingUtils.drawHud(gameMech.player.health, input[1], Integer.toString(level));
             input = solicitCharInputAndCursorLocation();
             switch (input[0]) {
                 case "w" -> outcome = gameMech.moveGameObject(gameMech.player, 0, 1);
                 case "s" -> outcome = gameMech.moveGameObject(gameMech.player, 0, -1);
                 case "a" -> outcome = gameMech.moveGameObject(gameMech.player, -1, 0);
                 case "d" -> outcome = gameMech.moveGameObject(gameMech.player, 1, 0);
-                case " " -> outcome = gameMech.moveGameObject(gameMech.player, 0, 0);
+                case " " -> {
+                    outcome = gameMech.moveGameObject(gameMech.player, 0, 0);
+                    gameMech.player.changeHealth(-250); // TODO: delete; only for testing purpose
+                }
                 case ":" -> {
                     if (solicitCharInput() == 'q') {
                         saveGame();
@@ -535,18 +406,33 @@ public class Engine {
             switch (outcome) {
                 case 1 -> {
                     level += 1;
-                    // TODO : keep health from last level; indicate new level in HUD
                     String advanceMsg = String.format("Advance Level -> Level %d !", level);
                     System.out.println(advanceMsg);
                     runInteractiveEngine(random.nextInt(), gameMech.player.name, gameMech.player.health);
                 }
                 case 3 -> {
                     System.out.println("Game Over!");
-                    drawEndDisplay();
+                    Leaderboard lb = updateLeaderboard(gameMech.player.name, level);
+                    DrawingUtils.drawEndDisplay(level, lb);
                     restartGame();
                 }
             }
         }
+    }
+
+    /**
+     * Load, update and save the leaderboard. Only the top ENTRIES_TO_KEEP entries are kept on
+     * the leaderboard. The entry with the highest level attained will be displayed at the top.
+     * @param playerName name of the current player
+     * @param level level that the current player attain
+     * @return updated leaderboard
+     */
+    Leaderboard updateLeaderboard(String playerName, int level) {
+        Leaderboard lb = new Leaderboard();
+        lb.load(join(GAMESAVE, "lbEntries"));
+        lb.update(playerName, level);
+        lb.save();
+        return lb;
     }
 
     /**
@@ -658,11 +544,11 @@ public class Engine {
      * @return whether a save is successfully loaded
      */
     boolean loadGame(boolean drawMsg) {
-        if (GAMESAVE.list().length == 0) {
+        if (!join(GAMESAVE, "gameState").exists()) {
             System.out.println("There is no saved game");
             if (drawMsg) {
-                clearCanvasAndDrawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 1.5 * 4
-                        , "There is no saved game");
+                DrawingUtils.clearCanvasAndDrawText(WORLD_WIDTH / 2.0
+                        , WORLD_HEIGHT * 0.5, "There is no saved game");
             }
             return false;
         }
