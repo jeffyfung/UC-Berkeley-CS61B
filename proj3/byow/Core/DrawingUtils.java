@@ -1,5 +1,7 @@
 package byow.Core;
 
+import byow.TileEngine.TERenderer;
+import byow.TileEngine.TETile;
 import edu.princeton.cs.introcs.StdDraw;
 
 import java.awt.*;
@@ -125,6 +127,11 @@ public class DrawingUtils {
     static void clearCanvasAndDrawText(double x, double y, String str) {
         StdDraw.clear(StdDraw.BLACK);
         drawText(x, y, str);
+    }
+
+    // renderFrame(fovTiles) when light is toggled off
+    static void drawGameState(TERenderer ter, TETile[][] tiles) {
+        ter.renderFrame(tiles);
     }
 
     /**

@@ -9,9 +9,7 @@ import edu.princeton.cs.introcs.StdDraw;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 import static byow.Core.PersistenceUtils.*;
 
@@ -49,25 +47,31 @@ public class Engine {
     int level;
     /** Description of tile at cursor. */
     String tileDescriptionAtCursor = "";
+    /** Whether lights are toggled on / off. Only field of view is visible when lights are off. */
+    boolean lightsOn = false;
+    /** Variable to track positions within field of view during recursion. See getFovPos(). */
+    List<Position> fovPos;
+    /** Radius of field of view when lights are off. */
+    static final int LIGHT_RADIUS = 5;
 
     /** Constructor for Engine objects. Initialize the game state with empty tiles. */
     public Engine() {
         this.level = 1;
-        this.tiles = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
-        setTilesToBackground();
+        this.tiles = setTilesToBackground(new TETile[WORLD_WIDTH][WORLD_HEIGHT]);
     }
 
     /**
      * Set all tiles to empty.
+     * @param tArray tile array to alter
      * @return array of empty tiles
      */
-    private TETile[][] setTilesToBackground() {
-        for (int x = 0; x < WORLD_WIDTH; x += 1) {
-            for (int y = 0; y < WORLD_HEIGHT; y += 1) {
-                tiles[x][y] = Tileset.NOTHING;
+    static TETile[][] setTilesToBackground(TETile[][] tArray) {
+        for (int x = 0; x < tArray.length; x += 1) {
+            for (int y = 0; y < tArray[0].length; y += 1) {
+                tArray[x][y] = Tileset.NOTHING;
             }
         }
-        return tiles;
+        return tArray;
     }
 
     /**
@@ -200,6 +204,7 @@ public class Engine {
      * @return input character and description of the mouse-over tile
      */
     private String[] solicitCharInputAndCursorLocation() {
+        TETile[][] fovTiles = null;
         while (true) {
             if (StdDraw.hasNextKeyTyped()) {
                 char input = Character.toLowerCase(StdDraw.nextKeyTyped());
@@ -208,14 +213,12 @@ public class Engine {
             }
             int cursorX = (int) StdDraw.mouseX() - WORLD_XOFFSET;
             int cursorY = (int) StdDraw.mouseY() - WORLD_YOFFSET;
-            String tileDescription;
-            if (cursorX < 0 || cursorY < 0) {
-                tileDescription = Tileset.NOTHING.description();
-            } else {
-                tileDescription = getTilePattern(cursorX, cursorY).description();
-                if (tileDescription.equals("Player")) {
-                    tileDescription = gameMech.player.name;
-                }
+            if (fovTiles == null) {
+                fovTiles = fieldOfView(tiles);
+            }
+            String tileDescription = getTilePattern(fovTiles, cursorX, cursorY).description();
+            if (tileDescription.equals("Player")) {
+                tileDescription = gameMech.player.name;
             }
             if (!tileDescription.equals(tileDescriptionAtCursor)) {
                 tileDescriptionAtCursor = tileDescription;
@@ -353,7 +356,7 @@ public class Engine {
      */
     void runEngine(int seed, String playerName, int playerHealth) {
         this.random = new Random(seed);
-        setTilesToBackground();
+        setTilesToBackground(tiles);
         ArrayList<Room> rooms = Room.buildRooms(this);
         Room.connectRooms(this, rooms);
         gameMech = new GameMechanics(this, rooms, playerName, playerHealth);
@@ -382,7 +385,7 @@ public class Engine {
         String[] input = new String[] {"`", tileDescriptionAtCursor};
         int outcome = 0;
         while (true) {
-            ter.renderFrame(tiles);
+            DrawingUtils.drawGameState(ter, fieldOfView(tiles));
             DrawingUtils.drawHud(gameMech.player.health, input[1], Integer.toString(level));
             input = solicitCharInputAndCursorLocation();
             switch (input[0]) {
@@ -402,6 +405,7 @@ public class Engine {
                     outcome = gameMech.moveGameObject(gameMech.player, 0, 0);
                     gameMech.player.changeHealth(-250); // TODO: delete; only for testing purpose
                 }
+                case "t" -> lightsOn = !lightsOn;
                 case ":" -> {
                     if (solicitCharInput() == 'q') {
                         saveGame();
@@ -422,6 +426,43 @@ public class Engine {
                     DrawingUtils.drawEndDisplay(level, lb);
                     restartGame();
                 }
+            }
+        }
+    }
+
+    /**
+     * Return an array representing the field of view of player when lights are toggled off. The
+     * field of view displays tiles that are at most LIGHT_RADIUS tiles away from player's
+     * position and stops at walls.
+     * @param tArray tile array representing game state
+     * @return modified tile array that only shows the tiles close to player. All other tiles are
+     * set to empty (Tileset.NOTHING)
+     **/
+    TETile[][] fieldOfView(TETile[][] tArray) {
+        if (lightsOn) {
+            return tArray;
+        } else {
+            fovPos = new LinkedList<>();
+            getFovPos(gameMech.player.pos, LIGHT_RADIUS);
+            TETile[][] _tArray = setTilesToBackground(new TETile[WORLD_WIDTH][WORLD_HEIGHT]);
+            for (Position pos : fovPos) {
+                _tArray[pos.getX()][pos.getY()] = tArray[pos.getX()][pos.getY()];
+            }
+            return _tArray;
+        }
+    }
+
+    /** Recursive helper function to get a list of positions within field of view of player. See
+     * fieldOfView(). */
+    private void getFovPos(Position pos, int lr) {
+        TETile curTilePattern = getTilePattern(pos);
+        if (lr >= 0 && !curTilePattern.isSameType(Tileset.NOTHING)) {
+            fovPos.add(pos);
+            if (!curTilePattern.isSameType(patternWall)) {
+                getFovPos(new Position(pos.getX() + 1, pos.getY()), lr - 1);
+                getFovPos(new Position(pos.getX() - 1, pos.getY()), lr - 1);
+                getFovPos(new Position(pos.getX(), pos.getY() + 1), lr - 1);
+                getFovPos(new Position(pos.getX(), pos.getY() - 1), lr - 1);
             }
         }
     }
@@ -512,18 +553,27 @@ public class Engine {
 
     /** Get TETile at specific position. */
     public TETile getTilePattern(Position pos) {
-        if (pos.getX() >= WORLD_WIDTH && pos.getY() >= WORLD_HEIGHT) {
-            return Tileset.NOTHING;
+        if (pos.getX() >= 0 && pos.getX() < WORLD_WIDTH &&
+            pos.getY() >= 0 && pos.getY() < WORLD_HEIGHT) {
+            return tiles[pos.getX()][pos.getY()];
         }
-        return tiles[pos.getX()][pos.getY()];
+        return Tileset.NOTHING;
     }
 
     /** Get TETile at specific position. */
     public TETile getTilePattern(int x, int y) {
-        if (x >= WORLD_WIDTH || y >= WORLD_HEIGHT) {
-            return Tileset.NOTHING;
+        if (x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT) {
+            return tiles[x][y];
         }
-        return tiles[x][y];
+        return Tileset.NOTHING;
+    }
+
+    /** Get TETile at specific position. */
+    public TETile getTilePattern(TETile[][] tArray, int x, int y) {
+        if (x >= 0 && x < tArray.length && y >= 0 && y < tArray[0].length) {
+            return tArray[x][y];
+        }
+        return Tileset.NOTHING;
     }
 
     /**
