@@ -31,6 +31,7 @@ public class Engine {
     static TETile patternPlayerAvatar = Tileset.AVATAR_LEFT;
     static final TETile patternExit = Tileset.LOCKED_DOOR;
     static final TETile patternTorch = Tileset.TORCH;
+    /** Current working directory */
     static final File CWD = new File(System.getProperty("user.dir"));
     /** Directory for saving and loading game. */
     static final File GAMESAVE = join(CWD, ".gamesave");
