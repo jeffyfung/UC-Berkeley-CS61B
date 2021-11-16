@@ -21,6 +21,8 @@ public class GameMechanics implements Serializable {
     Position exit;
     /** A set of torches that can light up the whole map. */
     Set<Torch> torches;
+    /** A set of breads that deal damages to player, reducing their health. */
+    Set<Bread> breads;
     /** Initial health of player. Game ends when health drops to 0 */
     static final int INIT_PLAYER_HEALTH = 500;
     /** Minimum distance between player and exit at initialization. */
@@ -33,6 +35,8 @@ public class GameMechanics implements Serializable {
     static final int LIGHT_RADIUS = 5;
     /** Number of torches randomly placed on map. */
     static final int NUM_TORCHES = 8;
+    /** Number of breads placed on map. */
+    static final int NUM_BREADS = 4;
 
     /**
      * Constructor of the class. Set player and exit at random locations of the world.
@@ -42,6 +46,7 @@ public class GameMechanics implements Serializable {
         this.player = initializePlayer(playerName, playerHealth);
         this.exit = initializeExit(rooms);
         this.torches = initializeTorches();
+        this.breads = initializeBreads();
         this.lightsOn = false;
     }
 
@@ -94,6 +99,10 @@ public class GameMechanics implements Serializable {
         return exitPos;
     }
 
+    /**
+     * Randomly initializes NUM_TORCHES torches. Torches must be placed on a floor tile.
+     * @return a set of torch
+     */
     private Set<Torch> initializeTorches() {
         Set<Torch> out = new HashSet<>();
         for (int i = 0; i < NUM_TORCHES; i += 1) {
@@ -111,23 +120,37 @@ public class GameMechanics implements Serializable {
     }
 
     /**
+     * Randomly initializes NUM_BREADS breads. Breads must be placed on a floor tile.
+     * @return a set of breads
+     */
+    private Set<Bread> initializeBreads() {
+        Set<Bread> out = new HashSet<>();
+        for (int i = 0; i < NUM_BREADS; i += 1) {
+            int x = engine.random.nextInt(WORLD_WIDTH);
+            int y = engine.random.nextInt(WORLD_HEIGHT);
+            while (!engine.getTilePattern(x, y).isSameType(Engine.patternFloor)) {
+                x = engine.random.nextInt(WORLD_WIDTH);
+                y = engine.random.nextInt(WORLD_HEIGHT);
+            }
+            Position pos = new Position(x, y);
+            engine.changeTilePattern(pos, Engine.patternBread);
+            out.add(new Bread(pos, patternBread));
+        }
+        return out;
+    }
+
+    /**
      * Moves game object.
      * @param go game object to be moved
      * @param dX x-axis displacement of game object
      * @param dY y-axis displacement of game object
      * @return output of movement:
-     *     -1 - player's health falls to <=0 after movement;
-     *      0 - successful movement;
-     *      1 - no movement as player cannot walks into a wall;
-     *      2 - exit current level and advance;
+     *      -1 - player's health falls to <=0 after movement;
+     *       0 - successful movement or no movement;
+     *       1 - exit current level and advance;
      */
     int moveGameObject(GameObject go, int dX, int dY) {
-        int out = go.move(engine, dX, dY);
-        if (out == 10 || out == 11) {
-            lightsOn = out == 10;
-            out = 0;
-        }
-        return out;
+        return go.move(this, engine, dX, dY);
     }
 
     /** Deprecated */
@@ -140,8 +163,23 @@ public class GameMechanics implements Serializable {
         throw new NoSuchElementException("Cannot find torch");
     }
 
+    /** Disable field of view if it is enabled, and vice versa. */
     void lightSwitch() {
         lightsOn = !lightsOn;
+    }
+
+    /**
+     * Get bread located at a given position.
+     * @param pos position of bread
+     * @return bread
+     */
+    Bread findBreadFmPos(Position pos) {
+        for (Bread b : breads) {
+            if (b.pos.equals(pos)) {
+                return b;
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     /**

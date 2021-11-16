@@ -31,6 +31,7 @@ public class Engine {
     static TETile patternPlayerAvatar = Tileset.AVATAR_LEFT;
     static final TETile patternExit = Tileset.LOCKED_DOOR;
     static final TETile patternTorch = Tileset.TORCH;
+    static final TETile patternBread = Tileset.BREAD;
     /** Current working directory */
     static final File CWD = new File(System.getProperty("user.dir"));
     /** Directory for saving and loading game. */
@@ -156,8 +157,6 @@ public class Engine {
                 return input;
             }
             if (StdDraw.isMousePressed()) {
-                System.out.println(StdDraw.isMousePressed());
-                System.out.println("mouse pressed");
                 return solicitInputFromMouseForMenu();
             }
         }
@@ -386,16 +385,8 @@ public class Engine {
             switch (input[0]) {
                 case "w" -> outcome = gameMech.moveGameObject(gameMech.player, 0, 1);
                 case "s" -> outcome = gameMech.moveGameObject(gameMech.player, 0, -1);
-                case "a" -> {
-                    patternPlayerAvatar = Tileset.AVATAR_LEFT;
-                    gameMech.player.changeAvatar(Tileset.AVATAR_LEFT);
-                    outcome = gameMech.moveGameObject(gameMech.player, -1, 0);
-                }
-                case "d" -> {
-                    patternPlayerAvatar = Tileset.AVATAR_RIGHT;
-                    gameMech.player.changeAvatar(Tileset.AVATAR_RIGHT);
-                    outcome = gameMech.moveGameObject(gameMech.player, 1, 0);
-                }
+                case "a" -> outcome = gameMech.moveGameObject(gameMech.player, -1, 0);
+                case "d" -> outcome = gameMech.moveGameObject(gameMech.player, 1, 0);
                 case " " -> {
                     outcome = gameMech.moveGameObject(gameMech.player, 0, 0);
                     gameMech.player.changeHealth(-250); // TODO: delete; only for testing purpose
@@ -409,7 +400,7 @@ public class Engine {
                 }
             }
             switch (outcome) {
-                case 2 -> {
+                case 1 -> {
                     level += 1;
                     String advanceMsg = String.format("Advance Level -> Level %d !", level);
                     System.out.println(advanceMsg);

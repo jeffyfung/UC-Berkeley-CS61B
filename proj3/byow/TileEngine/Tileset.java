@@ -24,6 +24,8 @@ public class Tileset {
             "Soil", "./tileImage/soil.png");
     public static final TETile TORCH = new TETile('!', Color.black, Color.black
             , "Torch", "./tileImage/lamp.png");
+    public static final TETile BREAD = new TETile('2', Color.black, Color.black
+            , "Bread", "./tileImage/bread.png");
 
     /* Unused tileset */
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
@@ -35,6 +37,8 @@ public class Tileset {
     public static final TETile MOUNTAIN = new TETile('▲', Color.gray, Color.black, "Mountain");
     public static final TETile WALL = new TETile('#', new Color(216, 128, 128), Color.darkGray,
             "Wall", "./tileImage/brownWall.png");
+    public static final TETile MONSTER = new TETile('1', Color.black, Color.black
+            , "Monster", "./tileImage/monster.png");
 }
 
 
