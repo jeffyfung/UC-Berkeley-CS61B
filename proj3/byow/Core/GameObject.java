@@ -29,16 +29,13 @@ public class GameObject implements Serializable {
      * @param engine game engine
      * @param dX displacement along x-axis
      * @param dY displacement along y-axis
-     * @return outcome of movement: 0 - success; 1 - advance level; 2 - no movement
+     * @return output of movement
      */
     int move(Engine engine, int dX, int dY) {
         Position _pos = new Position(pos.getX() + dX, pos.getY() + dY);
         TETile _lastTilePattern = engine.getTilePattern(_pos);
-        if (_lastTilePattern.isSameType(Engine.patternExit)) {
-            return 1;
-        }
         if (_lastTilePattern.isSameType(Engine.patternWall)) {
-            return 2;
+            return 1;
         }
         if (dX != 0 || dY != 0) {
             engine.changeTilePattern(pos, lastTilePattern);

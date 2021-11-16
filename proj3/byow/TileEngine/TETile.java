@@ -195,7 +195,5 @@ public class TETile implements Serializable {
      * Check if this tile is the same type of tile as the given tile.
      * @param tile tile to compare
      * */
-    public boolean isSameType(TETile tile) {
-        return this.description.equals(tile.description);
-    }
+    public boolean isSameType(TETile tile) { return this.character == tile.character; }
 }

@@ -129,7 +129,6 @@ public class DrawingUtils {
         drawText(x, y, str);
     }
 
-    // renderFrame(fovTiles) when light is toggled off
     static void drawGameState(TERenderer ter, TETile[][] tiles) {
         ter.renderFrame(tiles);
     }

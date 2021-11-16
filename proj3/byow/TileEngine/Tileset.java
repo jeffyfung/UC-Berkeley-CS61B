@@ -22,6 +22,8 @@ public class Tileset {
             "Fireball", "/tileImage/fireball.png");
     public static final TETile SOIL = new TETile('▒', Color.yellow, Color.black,
             "Soil", "./tileImage/soil.png");
+    public static final TETile TORCH = new TETile('!', Color.black, Color.black
+            , "Torch", "./tileImage/lamp.png");
 
     /* Unused tileset */
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
