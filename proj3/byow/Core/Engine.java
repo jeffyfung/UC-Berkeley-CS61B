@@ -40,7 +40,7 @@ public class Engine {
     /** Current working directory */
     static final File CWD = new File(System.getProperty("user.dir"));
     /** Directory for saving and loading game. */
-    static final File GAMESAVE = join(CWD, ".gamesave");
+    static final File GAMESAVE = join(CWD, "byow", ".gamesave");
 
     /** RNG */
     Random random;

@@ -9,25 +9,25 @@ import java.awt.Color;
 public class Tileset {
     public static final TETile NOTHING = new TETile(' ', Color.black, Color.black, "");
     public static final TETile AVATAR_LEFT = new TETile('@', Color.white, Color.black,
-            "Player", "./tileImage/avatarLeft.png");
+            "Player", "./byow/tileImage/avatarLeft.png");
     public static final TETile AVATAR_RIGHT = new TETile('-', Color.white, Color.black,
-            "Player", "./tileImage/avatarRight.png");
+            "Player", "./byow/tileImage/avatarRight.png");
     public static final TETile TREE = new TETile('♠', Color.green, Color.black,
-            "Tree", "./tileImage/tree.png");
+            "Tree", "./byow/tileImage/tree.png");
     public static final TETile GRASS = new TETile('"', Color.green, Color.black,
-            "Grass", "./tileImage/grass.png");
+            "Grass", "./byow/tileImage/grass.png");
     public static final TETile LOCKED_DOOR = new TETile('█', Color.orange, Color.black,
-            "Exit", "./tileImage/ice.png");
+            "Exit", "./byow/tileImage/ice.png");
     public static final TETile FIREBALL = new TETile('1', Color.red, Color.black,
-            "Fireball", "/tileImage/fireball.png");
+            "Fireball", "./byow/tileImage/fireball.png");
     public static final TETile SOIL = new TETile('▒', Color.yellow, Color.black,
-            "Soil", "./tileImage/soil.png");
+            "Soil", "./byow/tileImage/soil.png");
     public static final TETile TORCH = new TETile('!', Color.black, Color.black
-            , "Torch", "./tileImage/lamp.png");
+            , "Torch", "./byow/tileImage/lamp.png");
     public static final TETile BREAD = new TETile('2', Color.black, Color.black
-            , "Bread", "./tileImage/bread.png");
+            , "Bread", "./byow/tileImage/bread.png");
     public static final TETile PORTAL = new TETile('3', Color.black, Color.black
-            , "Portal", "./tileImage/portal.png");
+            , "Portal", "./byow/tileImage/portal.png");
 
     /* Unused tileset */
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
@@ -38,9 +38,9 @@ public class Tileset {
             "Unlocked Door");
     public static final TETile MOUNTAIN = new TETile('▲', Color.gray, Color.black, "Mountain");
     public static final TETile WALL = new TETile('#', new Color(216, 128, 128), Color.darkGray,
-            "Wall", "./tileImage/brownWall.png");
+            "Wall", "./byow/tileImage/brownWall.png");
     public static final TETile MONSTER = new TETile('1', Color.black, Color.black
-            , "Monster", "./tileImage/monster.png");
+            , "Monster", "./byow/tileImage/monster.png");
 }
 
 
