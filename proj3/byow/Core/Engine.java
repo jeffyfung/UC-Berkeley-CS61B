@@ -127,6 +127,7 @@ public class Engine {
         while (true) {
             DrawingUtils.drawGameState(ter, gameMech.fieldOfView(tiles));
             DrawingUtils.drawHud(gameMech.player.health, input[1], Integer.toString(level));
+            System.out.println(this);
             input = solicitCharInputAndCursorLocation();
             switch (input[0]) {
                 case "w" -> outcome = gameMech.moveGameObject(gameMech.player, 0, 1);
@@ -200,15 +201,17 @@ public class Engine {
     /* Methods for debugging map generation */
 
     /**
-     * Run the game engine. The engine should behave exactly as if the user typed these characters
-     * into the engine using interactWithKeyboard(), except that the only thing the user is
-     * prompted to input, apart from the gameplay, is the seed for RNG.
-     * If the first valid input character is "l", the last saved game state, if any, will be
-     * loaded. For instance, the call interactWithInputString("n123sss:q") followed by the call
-     * interactWithInputString("lww") should yield the exact same world state as
-     * interactWithInputString("n123sssww").
-     * @param input the input string to feed to your program
-     * @return the 2D TETile[][] representing the state of the world
+     * Run the static game engine by parsing user's input string. The engine exhibits the same
+     * behavior as using interactWithKeyboard(), with the following exceptions:
+     *      - no interactive display is rendered
+     *      - the engine neither asks for nor takes in player's name
+     *      - the engine doesnt ask if the player wants to restart at the end of a game
+     *
+     * The game state in the form of a tile array is returned if the game is not over after parsing
+     * all of user's input.
+     *
+     * @param input the input string to prompt new game, load game or quit program.
+     * @return tile array representing game state
      */
     public TETile[][] interactWithInputString(String input) {
         setUpPersistence();
@@ -216,7 +219,8 @@ public class Engine {
         switch (collectMenuOption(inputSource)) {
             case 'n' -> {
                 int seed = collectSeedFromInputString(inputSource);
-                return runStaticEngine(seed, inputSource, GameMechanics.INIT_PLAYER_HEALTH);
+                return runStaticEngine(seed, inputSource, "placeholder"
+                        , GameMechanics.INIT_PLAYER_HEALTH);
             }
             case 'l' -> {
                 boolean loadStatus = loadGame(false);
@@ -232,37 +236,26 @@ public class Engine {
     }
 
     /**
-     * Initializes engine and gameplay setting. Then change game state according to input string
-     * sequence from user. Return the final game state. Called when user calls
-     * interactWithString().
+     * Initializes engine and gameplay setting. Then changes game state according to input string
+     * sequence from user. Return the final game state. Called when user calls interactWithString().
      * @param seed seed for RNG
      * @param inputSource parses input string from user
+     * @param playerName name of player
      * @param playerHealth health of player
      * @return array representing tiles in current game state
      */
-    TETile[][] runStaticEngine(int seed, InputSource inputSource, int playerHealth) {
-        runEngine(seed, playerHealth);
+    TETile[][] runStaticEngine(int seed, InputSource inputSource, String playerName,
+                               int playerHealth) {
+        runEngine(seed, playerName, playerHealth);
         return runStaticGamePlay(inputSource);
     }
 
     /**
-     * Pseudo-randomly generates rooms and hallways and initialize game objects.
-     * @param seed seed for RNG
-     * @param playerHealth health of player
-     */
-    void runEngine(int seed, int playerHealth) {
-        this.random = new Random(seed);
-        ArrayList<Room> rooms = Room.buildRooms(this);
-        Room.connectRooms(this, rooms);
-        gameMech = new GameMechanics(this, rooms, "placeholder", playerHealth);
-    }
-
-    /**
-     * Similar to runInteractiveGameplay() but takes user-input string.
+     * Run gameplay by parsing user's input string. Similar to runInteractiveGameplay() but lacks a
+     * few features (see interactWithInputString()).
      * @param inputSource parses input string from user
      * @return array representing game state
      */
-    // TODO: to match interactive gameplay
     TETile[][] runStaticGamePlay(InputSource inputSource) {
         int outcome = 0;
         while (inputSource.possibleNextInput()) {
@@ -272,21 +265,28 @@ public class Engine {
                 case 's' -> outcome = gameMech.moveGameObject(gameMech.player, 0, -1);
                 case 'a' -> outcome = gameMech.moveGameObject(gameMech.player, -1, 0);
                 case 'd' -> outcome = gameMech.moveGameObject(gameMech.player, 1, 0);
-                case ' ' -> outcome = gameMech.moveGameObject(gameMech.player, 0, 0);
+                case ' ' -> outcome = gameMech.idle();
+                case 'h' -> outcome = gameMech.teleport();
                 case ':' -> {
-                    if (solicitCharInput() == 'q') {
+                    if (inputSource.getNextKey() == 'q') {
                         saveGame();
+                        System.out.println(this);
                         System.exit(0);
                     }
                 }
             }
-            if (outcome == 1) {
-                level += 1;
-                String advanceMsg = String.format("Advance Level -> Level %d !", level);
-                System.out.println(advanceMsg);
-                runStaticEngine(random.nextInt(), inputSource, gameMech.player.health);
-            } else if (outcome == 3) {
-                System.out.println("Game Over!");
+            switch (outcome) {
+                case 1 -> {
+                    level += 1;
+                    String advanceMsg = String.format("Advance Level -> Level %d !", level);
+                    System.out.println(advanceMsg);
+                    runStaticEngine(random.nextInt(), inputSource, "placeholder"
+                            , gameMech.player.health);
+                }
+                case -1 -> {
+                    System.out.println("Game Over!");
+                    System.exit(0);
+                }
             }
         }
         return tiles;

@@ -207,7 +207,7 @@ public class GameMechanics implements Serializable {
      *       0 - no movement
      */
     int teleport() {
-        if (player.lastTilePattern.equals(patternPortal)) {
+        if (player.lastTilePattern.isSameType(patternPortal)) {
             PortalPair pp = findPortalPairFmPos(player.pos);
             Position newPos = pp.getOtherPortalPos(player.pos);
             if (!player.changeHealth(-1)) {
