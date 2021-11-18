@@ -9,7 +9,9 @@ import edu.princeton.cs.introcs.StdDraw;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
 
 import static byow.Core.PersistenceUtils.*;
 
@@ -26,6 +28,7 @@ public class Engine {
     static final int WORLD_XOFFSET = 0;
     /** Y-axis distance between bottom of display window and bottom of frame to draw tiles. */
     static final int WORLD_YOFFSET = 2;
+
     static final TETile patternWall = Tileset.TREE;
     static final TETile patternFloor = Tileset.SOIL;
     static TETile patternPlayerAvatar = Tileset.AVATAR_LEFT;
@@ -33,10 +36,12 @@ public class Engine {
     static final TETile patternTorch = Tileset.TORCH;
     static final TETile patternBread = Tileset.BREAD;
     static final TETile patternPortal = Tileset.PORTAL;
+
     /** Current working directory */
     static final File CWD = new File(System.getProperty("user.dir"));
     /** Directory for saving and loading game. */
     static final File GAMESAVE = join(CWD, ".gamesave");
+
     /** RNG */
     Random random;
     /** 2D array of tiles representing game state. */
@@ -54,20 +59,6 @@ public class Engine {
     public Engine() {
         this.level = 1;
         this.tiles = setTilesToBackground(new TETile[WORLD_WIDTH][WORLD_HEIGHT]);
-    }
-
-    /**
-     * Set all tiles to empty.
-     * @param tArray tile array to alter
-     * @return array of empty tiles
-     */
-    static TETile[][] setTilesToBackground(TETile[][] tArray) {
-        for (int x = 0; x < tArray.length; x += 1) {
-            for (int y = 0; y < tArray[0].length; y += 1) {
-                tArray[x][y] = Tileset.NOTHING;
-            }
-        }
-        return tArray;
     }
 
     /**
@@ -98,223 +89,6 @@ public class Engine {
     }
 
     /**
-     * Run the game engine. The engine should behave exactly as if the user typed these characters
-     * into the engine using interactWithKeyboard(), except that the only thing the user is
-     * prompted to input, apart from the gameplay, is the seed for RNG.
-     * If the first valid input character is "l", the last saved game state, if any, will be
-     * loaded. For instance, the call interactWithInputString("n123sss:q") followed by the call
-     * interactWithInputString("lww") should yield the exact same world state as
-     * interactWithInputString("n123sssww").
-     * @param input the input string to feed to your program
-     * @return the 2D TETile[][] representing the state of the world
-     */
-    public TETile[][] interactWithInputString(String input) {
-        setUpPersistence();
-        InputSource inputSource = new StringInputDevice(input.toLowerCase());
-        switch (collectMenuOption(inputSource)) {
-            case 'n' -> {
-                int seed = collectSeedFromInputString(inputSource);
-                return runStaticEngine(seed, inputSource, GameMechanics.INIT_PLAYER_HEALTH);
-            }
-            case 'l' -> {
-                boolean loadStatus = loadGame(false);
-                if (loadStatus) {
-                    return runStaticGamePlay(inputSource);
-                }
-                return null;
-            }
-            default -> {
-                return null;
-            }
-        }
-    }
-
-    /**
-     * Gets each keyboard input as character. Converts to lower case alphabets if applicable.
-     * @return keyboard input
-     */
-    private char solicitCharInput() {
-        while (true) {
-            if (StdDraw.hasNextKeyTyped()) {
-                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
-                System.out.println(input);
-                return input;
-            }
-        }
-    }
-
-    /**
-     * Gets each keyboard input as character. Converts to lower case alphabets if applicable. If
-     * mouse is clicked, return the user input for menu options, or spacebar.
-     * @return user input
-     */
-    private char solicitCharOrMouseInputForMenu() {
-        while (true) {
-            if (StdDraw.hasNextKeyTyped()) {
-                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
-                System.out.println(input);
-                return input;
-            }
-            if (StdDraw.isMousePressed()) {
-                return solicitInputFromMouseForMenu();
-            }
-        }
-    }
-
-    /**
-     * Gets user input according to the menu options. Return spacebar if the mouse is located
-     * outside of boxes represented by all options.
-     * @return user input represented by the mouse location
-     */
-    private char solicitInputFromMouseForMenu() {
-        double x = StdDraw.mouseX();
-        double y = StdDraw.mouseY();
-        if (Double.compare(DrawingUtils.optionNMinX, x) <= 0
-                && Double.compare(x, DrawingUtils.optionNMaxX) <= 0
-                && Double.compare(DrawingUtils.optionNMinY, y) <= 0
-                && Double.compare(y, DrawingUtils.optionNMaxY) <= 0) {
-            return 'n';
-        } else if (Double.compare(DrawingUtils.optionLMinX, x) <= 0
-                && Double.compare(x, DrawingUtils.optionLMaxX) <= 0
-                && Double.compare(DrawingUtils.optionLMinY, y) <= 0
-                && Double.compare(y, DrawingUtils.optionLMaxY) <= 0) {
-            return 'l';
-        } else if (Double.compare(DrawingUtils.optionQMinX, x) <= 0
-                && Double.compare(x, DrawingUtils.optionQMaxX) <= 0
-                && Double.compare(DrawingUtils.optionQMinY, y) <= 0
-                && Double.compare(y, DrawingUtils.optionQMaxY) <= 0) {
-            return 'q';
-        } else {
-            return ' ';
-        }
-    }
-
-    /**
-     * Gets each keyboard input from user and description of the tile that the mouse cursor is
-     * currently over. The function only returns when there is any unparsed input or a change in
-     * tile description.
-     * @return input character and description of the mouse-over tile
-     */
-    private String[] solicitCharInputAndCursorLocation() {
-        TETile[][] fovTiles = null;
-        while (true) {
-            if (StdDraw.hasNextKeyTyped()) {
-                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
-                System.out.println(input);
-                return new String[]{Character.toString(input), tileDescriptionAtCursor};
-            }
-            int cursorX = (int) StdDraw.mouseX() - WORLD_XOFFSET;
-            int cursorY = (int) StdDraw.mouseY() - WORLD_YOFFSET;
-            if (fovTiles == null) {
-                fovTiles = gameMech.fieldOfView(tiles);
-            }
-            String tileDescription = getTilePattern(fovTiles, cursorX, cursorY).description();
-            if (tileDescription.equals("Player")) {
-                tileDescription = gameMech.player.name;
-            }
-            if (!tileDescription.equals(tileDescriptionAtCursor)) {
-                tileDescriptionAtCursor = tileDescription;
-                return new String[]{"`", tileDescriptionAtCursor};
-            }
-        }
-    }
-
-    /**
-     * Gets seed for random number generation from user. The input must end with "s". If the
-     * input contains alphabets, except for the "s" at the end, user will be asked to enter the
-     * seed again and input is reset.
-     * @return seed for RNG.
-     */
-    private int solicitSeed() {
-        StringBuilder sb = new StringBuilder();
-        char input;
-        DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
-                , "Enter Seed Then Press s");
-        while (true) {
-            input = solicitCharInput();
-            if (input == 's') {
-                try {
-                    return Integer.parseUnsignedInt(sb.toString());
-                } catch (NumberFormatException e) {
-                    DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 13
-                            , "Accept Positive Integer Only! Try Again!");
-                    StdDraw.show();
-                    sb = new StringBuilder();
-                }
-            } else {
-                sb.append(input);
-                DrawingUtils.drawMenu();
-                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5
-                        , sb.toString());
-                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
-                        , "Enter Seed Then Press s");
-                StdDraw.show();
-            }
-        }
-    }
-
-    /**
-     * Get player name from user. Name must be followed by '/'.
-     * @return playerName
-     */
-    private String solicitPlayerName() {
-        StringBuilder sb = new StringBuilder();
-        char input;
-        DrawingUtils.drawMenu();
-        DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
-                , "Enter Your Name Then Press /:");
-        while (true) {
-            input = solicitCharInput();
-            if (input == '/') {
-                return sb.toString();
-            } else {
-                sb.append(input);
-                DrawingUtils.drawMenu();
-                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5
-                        , sb.toString());
-                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
-                        , "Enter Your Name Then Press /:");
-                StdDraw.show();
-            }
-        }
-    }
-
-    /**
-     * Extract character for menu options from user-input string. Return a valid character once
-     * it is parsed.
-     */
-    private char collectMenuOption(InputSource inputSource) {
-        while (inputSource.possibleNextInput()) {
-            char c = inputSource.getNextKey();
-            switch (c) {
-                case 'n', 'l', 'q' -> {
-                    return c;
-                }
-            }
-        }
-        throw new IllegalArgumentException();
-    }
-
-    /**
-     * Extract characters that represents the seed for RNG from user-input string. Reset the seed
-     * if an invalid character (i.e. alphabetic character) is parsed.
-     */
-    private int collectSeedFromInputString(InputSource inputSource) {
-        int seed = 0;
-        while (inputSource.possibleNextInput()) {
-            char c = inputSource.getNextKey();
-            if (c == 's') {
-                return seed;
-            } else if (Character.isAlphabetic(c)) {
-                seed = 0;
-            } else {
-                seed = seed * 10 + Character.getNumericValue(c);
-            }
-        }
-        throw new IllegalArgumentException();
-    }
-
-    /**
      * Initializes engine and gameplay setting. Then run interactive gameplay. Called when user
      * calls interactWithKeyboard().
      * @param seed seed for RNG
@@ -324,20 +98,6 @@ public class Engine {
     void runInteractiveEngine(int seed, String playerName, int playerHealth) {
         runEngine(seed, playerName, playerHealth);
         runInteractiveGameplay();
-    }
-
-    /**
-     * Initializes engine and gameplay setting. Then change game state according to input string
-     * sequence from user. Return the final game state. Called when user calls
-     * interactWithString().
-     * @param seed seed for RNG
-     * @param inputSource parses input string from user
-     * @param playerHealth health of player
-     * @return array representing tiles in current game state
-     */
-    TETile[][] runStaticEngine(int seed, InputSource inputSource, int playerHealth) {
-        runEngine(seed, playerHealth);
-        return runStaticGamePlay(inputSource);
     }
 
     /**
@@ -352,18 +112,6 @@ public class Engine {
         ArrayList<Room> rooms = Room.buildRooms(this);
         Room.connectRooms(this, rooms);
         gameMech = new GameMechanics(this, rooms, playerName, playerHealth);
-    }
-
-    /**
-     * Pseudo-randomly generates rooms and hallways and initialize game objects.
-     * @param seed seed for RNG
-     * @param playerHealth health of player
-     */
-    void runEngine(int seed, int playerHealth) {
-        this.random = new Random(seed);
-        ArrayList<Room> rooms = Room.buildRooms(this);
-        Room.connectRooms(this, rooms);
-        gameMech = new GameMechanics(this, rooms, "placeholder", playerHealth);
     }
 
     /**
@@ -445,6 +193,70 @@ public class Engine {
         }
     }
 
+    public String toString() {
+        return TETile.toString(tiles);
+    }
+
+    /* Methods for debugging map generation */
+
+    /**
+     * Run the game engine. The engine should behave exactly as if the user typed these characters
+     * into the engine using interactWithKeyboard(), except that the only thing the user is
+     * prompted to input, apart from the gameplay, is the seed for RNG.
+     * If the first valid input character is "l", the last saved game state, if any, will be
+     * loaded. For instance, the call interactWithInputString("n123sss:q") followed by the call
+     * interactWithInputString("lww") should yield the exact same world state as
+     * interactWithInputString("n123sssww").
+     * @param input the input string to feed to your program
+     * @return the 2D TETile[][] representing the state of the world
+     */
+    public TETile[][] interactWithInputString(String input) {
+        setUpPersistence();
+        InputSource inputSource = new StringInputDevice(input.toLowerCase());
+        switch (collectMenuOption(inputSource)) {
+            case 'n' -> {
+                int seed = collectSeedFromInputString(inputSource);
+                return runStaticEngine(seed, inputSource, GameMechanics.INIT_PLAYER_HEALTH);
+            }
+            case 'l' -> {
+                boolean loadStatus = loadGame(false);
+                if (loadStatus) {
+                    return runStaticGamePlay(inputSource);
+                }
+                return null;
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Initializes engine and gameplay setting. Then change game state according to input string
+     * sequence from user. Return the final game state. Called when user calls
+     * interactWithString().
+     * @param seed seed for RNG
+     * @param inputSource parses input string from user
+     * @param playerHealth health of player
+     * @return array representing tiles in current game state
+     */
+    TETile[][] runStaticEngine(int seed, InputSource inputSource, int playerHealth) {
+        runEngine(seed, playerHealth);
+        return runStaticGamePlay(inputSource);
+    }
+
+    /**
+     * Pseudo-randomly generates rooms and hallways and initialize game objects.
+     * @param seed seed for RNG
+     * @param playerHealth health of player
+     */
+    void runEngine(int seed, int playerHealth) {
+        this.random = new Random(seed);
+        ArrayList<Room> rooms = Room.buildRooms(this);
+        Room.connectRooms(this, rooms);
+        gameMech = new GameMechanics(this, rooms, "placeholder", playerHealth);
+    }
+
     /**
      * Similar to runInteractiveGameplay() but takes user-input string.
      * @param inputSource parses input string from user
@@ -480,8 +292,209 @@ public class Engine {
         return tiles;
     }
 
-    public String toString() {
-        return TETile.toString(tiles);
+    /* Methods for soliciting player's keyboard input */
+
+    /**
+     * Gets each keyboard input as character. Converts to lower case alphabets if applicable.
+     * @return keyboard input
+     */
+    private char solicitCharInput() {
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
+                System.out.println(input);
+                return input;
+            }
+        }
+    }
+
+    /**
+     * Gets each keyboard input as character. Converts to lower case alphabets if applicable. If
+     * mouse is clicked, return the user input for menu options, or spacebar.
+     * @return user input
+     */
+    private char solicitCharOrMouseInputForMenu() {
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
+                System.out.println(input);
+                return input;
+            }
+            if (StdDraw.isMousePressed()) {
+                return solicitInputFromMouseForMenu();
+            }
+        }
+    }
+
+    /**
+     * Gets user input according to the menu options. Return spacebar if the mouse is located
+     * outside of boxes represented by all options.
+     * @return user input represented by the mouse location
+     */
+    private char solicitInputFromMouseForMenu() {
+        double x = StdDraw.mouseX();
+        double y = StdDraw.mouseY();
+        if (Double.compare(DrawingUtils.optionNMinX, x) <= 0
+                && Double.compare(x, DrawingUtils.optionNMaxX) <= 0
+                && Double.compare(DrawingUtils.optionNMinY, y) <= 0
+                && Double.compare(y, DrawingUtils.optionNMaxY) <= 0) {
+            return 'n';
+        } else if (Double.compare(DrawingUtils.optionLMinX, x) <= 0
+                && Double.compare(x, DrawingUtils.optionLMaxX) <= 0
+                && Double.compare(DrawingUtils.optionLMinY, y) <= 0
+                && Double.compare(y, DrawingUtils.optionLMaxY) <= 0) {
+            return 'l';
+        } else if (Double.compare(DrawingUtils.optionQMinX, x) <= 0
+                && Double.compare(x, DrawingUtils.optionQMaxX) <= 0
+                && Double.compare(DrawingUtils.optionQMinY, y) <= 0
+                && Double.compare(y, DrawingUtils.optionQMaxY) <= 0) {
+            return 'q';
+        } else {
+            return ' ';
+        }
+    }
+
+    /**
+     * Gets seed for random number generation from user. The input must end with "s". If the
+     * input contains alphabets, except for the "s" at the end, user will be asked to enter the
+     * seed again and input is reset.
+     * @return seed for RNG.
+     */
+    private int solicitSeed() {
+        StringBuilder sb = new StringBuilder();
+        char input;
+        DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                , "Enter Seed Then Press s");
+        while (true) {
+            input = solicitCharInput();
+            if (input == 's') {
+                try {
+                    return Integer.parseUnsignedInt(sb.toString());
+                } catch (NumberFormatException e) {
+                    DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 13
+                            , "Accept Positive Integer Only! Try Again!");
+                    StdDraw.show();
+                    sb = new StringBuilder();
+                }
+            } else {
+                sb.append(input);
+                DrawingUtils.drawMenu();
+                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5
+                        , sb.toString());
+                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                        , "Enter Seed Then Press s");
+                StdDraw.show();
+            }
+        }
+    }
+
+    /**
+     * Get player name from user. Name must be followed by '/'.
+     * @return playerName
+     */
+    private String solicitPlayerName() {
+        StringBuilder sb = new StringBuilder();
+        char input;
+        DrawingUtils.drawMenu();
+        DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                , "Enter Your Name Then Press /:");
+        while (true) {
+            input = solicitCharInput();
+            if (input == '/') {
+                return sb.toString();
+            } else {
+                sb.append(input);
+                DrawingUtils.drawMenu();
+                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 11.5
+                        , sb.toString());
+                DrawingUtils.drawText(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0 - 10
+                        , "Enter Your Name Then Press /:");
+                StdDraw.show();
+            }
+        }
+    }
+
+    /**
+     * Gets each keyboard input from user and description of the tile that the mouse cursor is
+     * currently over. The function only returns when there is any unparsed input or a change in
+     * tile description.
+     * @return input character and description of the mouse-over tile
+     */
+    private String[] solicitCharInputAndCursorLocation() {
+        TETile[][] fovTiles = null;
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = Character.toLowerCase(StdDraw.nextKeyTyped());
+                System.out.println(input);
+                return new String[]{Character.toString(input), tileDescriptionAtCursor};
+            }
+            int cursorX = (int) StdDraw.mouseX() - WORLD_XOFFSET;
+            int cursorY = (int) StdDraw.mouseY() - WORLD_YOFFSET;
+            if (fovTiles == null) {
+                fovTiles = gameMech.fieldOfView(tiles);
+            }
+            String tileDescription = getTilePattern(fovTiles, cursorX, cursorY).description();
+            if (tileDescription.equals("Player")) {
+                tileDescription = gameMech.player.name;
+            }
+            if (!tileDescription.equals(tileDescriptionAtCursor)) {
+                tileDescriptionAtCursor = tileDescription;
+                return new String[]{"`", tileDescriptionAtCursor};
+            }
+        }
+    }
+
+    /* Methods for collecting player's input by parsing input string */
+
+    /**
+     * Extract character for menu options from user-input string. Return a valid character once
+     * it is parsed.
+     */
+    private char collectMenuOption(InputSource inputSource) {
+        while (inputSource.possibleNextInput()) {
+            char c = inputSource.getNextKey();
+            switch (c) {
+                case 'n', 'l', 'q' -> {
+                    return c;
+                }
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    /**
+     * Extract characters that represents the seed for RNG from user-input string. Reset the seed
+     * if an invalid character (i.e. alphabetic character) is parsed.
+     */
+    private int collectSeedFromInputString(InputSource inputSource) {
+        int seed = 0;
+        while (inputSource.possibleNextInput()) {
+            char c = inputSource.getNextKey();
+            if (c == 's') {
+                return seed;
+            } else if (Character.isAlphabetic(c)) {
+                seed = 0;
+            } else {
+                seed = seed * 10 + Character.getNumericValue(c);
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    /* Methods for interaction with tiles on map */
+
+    /**
+     * Set all tiles to empty.
+     * @param tArray tile array to alter
+     * @return array of empty tiles
+     */
+    static TETile[][] setTilesToBackground(TETile[][] tArray) {
+        for (int x = 0; x < tArray.length; x += 1) {
+            for (int y = 0; y < tArray[0].length; y += 1) {
+                tArray[x][y] = Tileset.NOTHING;
+            }
+        }
+        return tArray;
     }
 
     /** Change pattern of the specific tile */
@@ -499,7 +512,7 @@ public class Engine {
     /** Get TETile at specific position. */
     public TETile getTilePattern(Position pos) {
         if (pos.getX() >= 0 && pos.getX() < WORLD_WIDTH &&
-            pos.getY() >= 0 && pos.getY() < WORLD_HEIGHT) {
+                pos.getY() >= 0 && pos.getY() < WORLD_HEIGHT) {
             return tiles[pos.getX()][pos.getY()];
         }
         return Tileset.NOTHING;
@@ -520,6 +533,8 @@ public class Engine {
         }
         return Tileset.NOTHING;
     }
+
+    /* Methods for persistence */
 
     /**
      * Create a directory, if not already exists, to store state of game for saving and loading

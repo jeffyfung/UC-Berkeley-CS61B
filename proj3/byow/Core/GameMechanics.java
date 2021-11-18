@@ -45,9 +45,7 @@ public class GameMechanics implements Serializable {
     /** Number of pairs of portals place on map. */
     static final int NUM_PORTAL_PAIRS = 3;
 
-    /**
-     * Constructor of the class. Set player and exit at random locations of the world.
-     */
+    /** Constructor of the class. Set player and exit at random locations of the world. */
     GameMechanics(Engine engine, ArrayList<Room> rooms, String playerName, int playerHealth) {
         this.engine = engine;
         this.player = initializePlayer(playerName, playerHealth);
@@ -75,6 +73,8 @@ public class GameMechanics implements Serializable {
         engine.changeTilePattern(pos, Engine.patternPlayerAvatar);
         return new Player(pos, Engine.patternPlayerAvatar, playerName, playerHealth);
     }
+
+    /* Methods for initialization of gameplay */
 
     /**
      * Randomly initializes exit. Exit must be placed on a wall of a room.
@@ -170,6 +170,8 @@ public class GameMechanics implements Serializable {
         return new Position(x, y);
     }
 
+    /* Actions */
+
     /**
      * Player idles. Reduces player's health by 1.
      * @return outcome of idling:
@@ -259,6 +261,8 @@ public class GameMechanics implements Serializable {
         }
         throw new NoSuchElementException();
     }
+
+    /* Visuals */
 
     /**
      * Return an array representing the field of view of player when lights are toggled off. The
