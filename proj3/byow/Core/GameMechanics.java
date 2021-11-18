@@ -23,6 +23,9 @@ public class GameMechanics implements Serializable {
     Set<Torch> torches;
     /** A set of breads that deal damages to player, reducing their health. */
     Set<Bread> breads;
+    /** A set of pairs of portals which can teleport player from a portal to the other side of
+     * the portal. */
+    Set<PortalPair> portalPairs;
     /** Initial health of player. Game ends when health drops to 0 */
     static final int INIT_PLAYER_HEALTH = 500;
     /** Minimum distance between player and exit at initialization. */
@@ -33,10 +36,14 @@ public class GameMechanics implements Serializable {
     List<Position> fovPos;
     /** Radius of field of view when lights are off. */
     static final int LIGHT_RADIUS = 5;
+    /** Position of the other side of portal. */
+    Position portalPreviewPos;
     /** Number of torches randomly placed on map. */
     static final int NUM_TORCHES = 8;
     /** Number of breads placed on map. */
     static final int NUM_BREADS = 4;
+    /** Number of pairs of portals place on map. */
+    static final int NUM_PORTAL_PAIRS = 3;
 
     /**
      * Constructor of the class. Set player and exit at random locations of the world.
@@ -47,6 +54,7 @@ public class GameMechanics implements Serializable {
         this.exit = initializeExit(rooms);
         this.torches = initializeTorches();
         this.breads = initializeBreads();
+        this.portalPairs = initializePortals();
         this.lightsOn = false;
     }
 
@@ -100,19 +108,13 @@ public class GameMechanics implements Serializable {
     }
 
     /**
-     * Randomly initializes NUM_TORCHES torches. Torches must be placed on a floor tile.
+     * Randomly initializes NUM_TORCHES torches. Torches must be placed on floor tiles.
      * @return a set of torch
      */
     private Set<Torch> initializeTorches() {
         Set<Torch> out = new HashSet<>();
         for (int i = 0; i < NUM_TORCHES; i += 1) {
-            int x = engine.random.nextInt(WORLD_WIDTH);
-            int y = engine.random.nextInt(WORLD_HEIGHT);
-            while (!engine.getTilePattern(x, y).isSameType(Engine.patternFloor)) {
-                x = engine.random.nextInt(WORLD_WIDTH);
-                y = engine.random.nextInt(WORLD_HEIGHT);
-            }
-            Position pos = new Position(x, y);
+            Position pos = sampleRandPosOnTilePattern(patternFloor);
             engine.changeTilePattern(pos, Engine.patternTorch);
             out.add(new Torch(pos, Engine.patternTorch));
         }
@@ -120,23 +122,65 @@ public class GameMechanics implements Serializable {
     }
 
     /**
-     * Randomly initializes NUM_BREADS breads. Breads must be placed on a floor tile.
+     * Randomly initializes NUM_BREADS breads. Breads must be placed on floor tiles.
      * @return a set of breads
      */
     private Set<Bread> initializeBreads() {
         Set<Bread> out = new HashSet<>();
         for (int i = 0; i < NUM_BREADS; i += 1) {
-            int x = engine.random.nextInt(WORLD_WIDTH);
-            int y = engine.random.nextInt(WORLD_HEIGHT);
-            while (!engine.getTilePattern(x, y).isSameType(Engine.patternFloor)) {
-                x = engine.random.nextInt(WORLD_WIDTH);
-                y = engine.random.nextInt(WORLD_HEIGHT);
-            }
-            Position pos = new Position(x, y);
-            engine.changeTilePattern(pos, Engine.patternBread);
+            Position pos = sampleRandPosOnTilePattern(patternFloor);
+            engine.changeTilePattern(pos, patternBread);
             out.add(new Bread(pos, patternBread));
         }
         return out;
+    }
+
+    /**
+     * Randomly initializes NUM_PORTAL_PAIRS pairs of portals. Portals must be placed on floor
+     * tiles.
+     * @return a set of portal pairs
+     */
+    private Set<PortalPair> initializePortals() {
+        Set<PortalPair> out = new HashSet<>();
+        for (int i = 0; i < NUM_PORTAL_PAIRS; i += 1) {
+            Position posA = sampleRandPosOnTilePattern(patternFloor);
+            Position posB = sampleRandPosOnTilePattern(patternFloor);
+            while (Position.dist(posA, posB) < PortalPair.MIN_PAIR_DIST) {
+                posB = sampleRandPosOnTilePattern(patternFloor);
+            }
+            engine.changeTilePattern(posA, patternPortal);
+            engine.changeTilePattern(posB, patternPortal);
+            out.add(new PortalPair(posA, posB, patternPortal));
+        }
+        return out;
+    }
+
+    /**
+     * Randomly sample a tile position that has a specified tile pattern.
+     * @param tilePattern tile pattern of the sampled position
+     * @return position
+     */
+    private Position sampleRandPosOnTilePattern(TETile tilePattern) {
+        int x = engine.random.nextInt(WORLD_WIDTH);
+        int y = engine.random.nextInt(WORLD_HEIGHT);
+        while (!engine.getTilePattern(x, y).isSameType(tilePattern)) {
+            x = engine.random.nextInt(WORLD_WIDTH);
+            y = engine.random.nextInt(WORLD_HEIGHT);
+        }
+        return new Position(x, y);
+    }
+
+    /**
+     * Player idles. Reduces player's health by 1.
+     * @return outcome of idling:
+     *     -1 - player's health falls to <=0;
+     *      0 - nothing happens;
+     */
+    int idle() {
+        if (!player.changeHealth(-1)) {
+            return -1;
+        }
+        return 0;
     }
 
     /**
@@ -144,13 +188,33 @@ public class GameMechanics implements Serializable {
      * @param go game object to be moved
      * @param dX x-axis displacement of game object
      * @param dY y-axis displacement of game object
-     * @return output of movement:
+     * @return outcome of movement:
      *      -1 - player's health falls to <=0 after movement;
      *       0 - successful movement or no movement;
      *       1 - exit current level and advance;
      */
     int moveGameObject(GameObject go, int dX, int dY) {
         return go.move(this, engine, dX, dY);
+    }
+
+    /**
+     * If player is located on a portal tile, moves player to the other side of the portal. No
+     * action otherwise.
+     * @return outcome of movement:
+     *      -1 - player's health falls to <=0 after movement;
+     *       0 - no movement
+     */
+    int teleport() {
+        if (player.lastTilePattern.equals(patternPortal)) {
+            PortalPair pp = findPortalPairFmPos(player.pos);
+            Position newPos = pp.getOtherPortalPos(player.pos);
+            if (!player.changeHealth(-1)) {
+                return -1;
+            }
+            portalPreviewPos = player.pos;
+            player.updateObjectPosition(engine, newPos, patternPortal);
+        }
+        return 0;
     }
 
     /** Deprecated */
@@ -183,6 +247,20 @@ public class GameMechanics implements Serializable {
     }
 
     /**
+     * Get a portal pair whereby one side of the pair is located on the specified location.
+     * @param pos
+     * @return portal pair
+     */
+    PortalPair findPortalPairFmPos(Position pos) {
+        for (PortalPair pp : portalPairs) {
+            if (pp.getPortal().pos.equals(pos) || pp.getOtherPortal().pos.equals(pos)) {
+                return pp;
+            }
+        }
+        throw new NoSuchElementException();
+    }
+
+    /**
      * Return an array representing the field of view of player when lights are toggled off. The
      * field of view displays tiles that are at most LIGHT_RADIUS tiles away from player's
      * position and stops at walls.
@@ -196,6 +274,9 @@ public class GameMechanics implements Serializable {
         } else {
             fovPos = new LinkedList<>();
             getFovPos(player.pos, LIGHT_RADIUS);
+            if (portalPreviewPos != null) {
+                getFovPos(portalPreviewPos, LIGHT_RADIUS);
+            }
             TETile[][] _tArray = new TETile[tArray.length][tArray[0].length];
             Engine.setTilesToBackground(_tArray);
             for (Position pos : fovPos) {

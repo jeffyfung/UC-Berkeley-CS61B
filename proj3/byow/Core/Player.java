@@ -26,39 +26,36 @@ public class Player extends GameObject {
      * @param engine game engine
      * @param dX displacement along x-axis
      * @param dY displacement along y-axis
-     * @return output of movement:
+     * @return outcome of movement:
      *      -1 - player's health falls to <=0 after movement;
      *       0 - successful movement or no movement;
      *       1 - exit current level and advance;
      */
     int move(GameMechanics gm, Engine engine, int dX, int dY) {
-        Position newPos = new Position(pos.getX() + dX, pos.getY() + dY);
         if (dX == 0 && dY == 0) {
-            // if intentionally idle, deduct health and no movement
-            if (!changeHealth(-1)) {
-                return -1;
-            }
-        } else {
-            checkAvatarOrientation(dX);
-            TETile _lastTilePattern = engine.getTilePattern(newPos);
-            if (!_lastTilePattern.isSameType(Engine.patternWall)) {
-                if (!changeHealth(-1)) {
-                    return -1;
-                }
-                if (_lastTilePattern.isSameType(Engine.patternExit)) {
-                    return 1;
-                }
-                gm.lightsOn = false;
-                if (_lastTilePattern.isSameType(Engine.patternBread)) {
-                    changeHealth(Bread.BREAD_BOOST);
-                    gm.breads.remove(gm.findBreadFmPos(newPos));
-                    _lastTilePattern = Engine.patternFloor;
-                } else if (_lastTilePattern.isSameType(Engine.patternTorch)) {
-                    gm.lightsOn = true;
-                }
-                updateObjectPosition(engine, newPos, _lastTilePattern);
-            }
+            throw new IllegalArgumentException();
         }
+        checkAvatarOrientation(dX);
+        Position newPos = new Position(pos.getX() + dX, pos.getY() + dY);
+        TETile _lastTilePattern = engine.getTilePattern(newPos);
+
+        if (_lastTilePattern.isSameType(Engine.patternWall)) { return 0; }
+        if (!changeHealth(-1)) { return -1; }
+        if (_lastTilePattern.isSameType(Engine.patternExit)) { return 1; }
+
+        gm.lightsOn = false;
+        gm.portalPreviewPos = null;
+
+        if (_lastTilePattern.isSameType(Engine.patternPortal)) {
+            gm.portalPreviewPos = gm.findPortalPairFmPos(newPos).getOtherPortalPos(newPos);
+        } else if (_lastTilePattern.isSameType(Engine.patternBread)) {
+            changeHealth(Bread.BREAD_BOOST);
+            gm.breads.remove(gm.findBreadFmPos(newPos));
+            _lastTilePattern = Engine.patternFloor;
+        } else if (_lastTilePattern.isSameType(Engine.patternTorch)) {
+            gm.lightsOn = true;
+        }
+        updateObjectPosition(engine, newPos, _lastTilePattern);
         return 0;
     }
 

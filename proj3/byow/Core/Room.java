@@ -77,8 +77,6 @@ public class Room {
         TileGraph g = new TileGraph(rooms);
         int srcRoomIdx = 0;
         while (!roomsDS.connectedToAllObjects(srcRoomIdx)) {
-            // TODO: alternative method for calculating tgtRoom e.g. use Dijkstra's ? (inaccessible)
-            // TODO: append every hallways for quick retrieval? (apart from existingHallways)
             int tgtRoomIdx = getApproxAdjacUnconnectedRoom(roomsDS, rooms, srcRoomIdx);
             Hallway h = g.connect(srcRoomIdx, tgtRoomIdx);
             if (h != null) {

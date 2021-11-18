@@ -32,6 +32,7 @@ public class Engine {
     static final TETile patternExit = Tileset.LOCKED_DOOR;
     static final TETile patternTorch = Tileset.TORCH;
     static final TETile patternBread = Tileset.BREAD;
+    static final TETile patternPortal = Tileset.PORTAL;
     /** Current working directory */
     static final File CWD = new File(System.getProperty("user.dir"));
     /** Directory for saving and loading game. */
@@ -119,9 +120,8 @@ public class Engine {
                 boolean loadStatus = loadGame(false);
                 if (loadStatus) {
                     return runStaticGamePlay(inputSource);
-                } else {
-                    return null;
                 }
+                return null;
             }
             default -> {
                 return null;
@@ -149,7 +149,6 @@ public class Engine {
      * @return user input
      */
     private char solicitCharOrMouseInputForMenu() {
-        // TODO: mouse press bug
         while (true) {
             if (StdDraw.hasNextKeyTyped()) {
                 char input = Character.toLowerCase(StdDraw.nextKeyTyped());
@@ -353,7 +352,6 @@ public class Engine {
         ArrayList<Room> rooms = Room.buildRooms(this);
         Room.connectRooms(this, rooms);
         gameMech = new GameMechanics(this, rooms, playerName, playerHealth);
-//        gameMech = new GameMechanics(this, rooms, playerName, gameMech.player.health);
     }
 
     /**
@@ -387,10 +385,8 @@ public class Engine {
                 case "s" -> outcome = gameMech.moveGameObject(gameMech.player, 0, -1);
                 case "a" -> outcome = gameMech.moveGameObject(gameMech.player, -1, 0);
                 case "d" -> outcome = gameMech.moveGameObject(gameMech.player, 1, 0);
-                case " " -> {
-                    outcome = gameMech.moveGameObject(gameMech.player, 0, 0);
-                    gameMech.player.changeHealth(-250); // TODO: delete; only for testing purpose
-                }
+                case " " -> outcome = gameMech.idle();
+                case "h" -> outcome = gameMech.teleport();
                 case "t" -> gameMech.lightSwitch();
                 case ":" -> {
                     if (solicitCharInput() == 'q') {

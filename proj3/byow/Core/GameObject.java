@@ -30,7 +30,7 @@ public class GameObject implements Serializable {
      * @param engine game engine
      * @param dX displacement along x-axis
      * @param dY displacement along y-axis
-     * @return output of movement
+     * @return outcome of movement
      */
     int move(GameMechanics gm, Engine engine, int dX, int dY) {
         Position newPos = new Position(pos.getX() + dX, pos.getY() + dY);

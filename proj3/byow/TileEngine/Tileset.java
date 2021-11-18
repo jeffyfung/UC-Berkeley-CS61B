@@ -26,6 +26,8 @@ public class Tileset {
             , "Torch", "./tileImage/lamp.png");
     public static final TETile BREAD = new TETile('2', Color.black, Color.black
             , "Bread", "./tileImage/bread.png");
+    public static final TETile PORTAL = new TETile('3', Color.black, Color.black
+            , "Portal", "./tileImage/portal.png");
 
     /* Unused tileset */
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
